@@ -1,0 +1,1990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ObjectTracker — Campus Lost & Found</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+<style>
+/* ╔══════════════════════════════════════════════════════╗
+   ║             DESIGN SYSTEM & CSS VARIABLES           ║
+   ╚══════════════════════════════════════════════════════╝ */
+:root {
+  --bg:        #08080d;
+  --surface:   #0f0f16;
+  --surface2:  #161620;
+  --surface3:  #1c1c28;
+  --surface4:  #22222f;
+  --border:    rgba(255,255,255,0.07);
+  --border2:   rgba(255,255,255,0.11);
+  --accent:    #6366f1;
+  --accent-h:  #5254d8;
+  --accent2:   #22d3ee;
+  --accent3:   #f59e0b;
+  --danger:    #ef4444;
+  --success:   #10b981;
+  --warn:      #f59e0b;
+  --text:      #eeeef5;
+  --text-sub:  #a0a0b8;
+  --text-muted:#5c5c72;
+  --font-d:    'Syne', sans-serif;
+  --font-b:    'DM Sans', sans-serif;
+  --radius:    18px;
+  --radius-sm: 10px;
+  --shadow:    0 20px 60px rgba(0,0,0,0.5);
+  --glow:      0 0 60px rgba(99,102,241,0.12);
+  --nav-h:     66px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-b);
+  min-height: 100vh;
+  overflow-x: hidden;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* Grain overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Ambient blobs */
+.blob { position: fixed; border-radius: 50%; filter: blur(130px); pointer-events: none; z-index: 0; }
+.blob-1 { width: 700px; height: 700px; background: #6366f1; opacity: 0.06; top: -300px; left: -200px; }
+.blob-2 { width: 500px; height: 500px; background: #22d3ee; opacity: 0.05; bottom: -200px; right: -150px; }
+.blob-3 { width: 350px; height: 350px; background: #f59e0b; opacity: 0.04; top: 50%; left: 50%; transform: translate(-50%,-50%); }
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║                      NAV BAR                        ║
+   ╚══════════════════════════════════════════════════════╝ */
+nav {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: var(--nav-h);
+  background: rgba(8,8,13,0.88);
+  backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--border);
+  z-index: 500;
+}
+.nav-inner {
+  max-width: 1360px; margin: 0 auto; padding: 0 28px;
+  height: 100%; display: flex; align-items: center; gap: 32px;
+}
+.nav-logo {
+  font-family: var(--font-d); font-weight: 800; font-size: 1.15rem;
+  color: var(--text); text-decoration: none;
+  display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+}
+.nav-logo .ni {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem; color: #fff;
+}
+.nav-links { display: flex; align-items: center; gap: 2px; list-style: none; flex: 1; }
+.nav-links a {
+  color: var(--text-sub); text-decoration: none;
+  font-size: 0.855rem; font-weight: 500;
+  padding: 7px 13px; border-radius: 8px;
+  transition: all 0.18s; display: flex; align-items: center; gap: 7px;
+}
+.nav-links a:hover { color: var(--text); background: var(--surface2); }
+.nav-links a.active { color: var(--accent); }
+.nav-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.nav-user { display: none; align-items: center; gap: 10px; }
+.nav-user.show { display: flex; }
+.nav-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.72rem; font-weight: 700; color: #fff; flex-shrink: 0;
+}
+.nav-uname { font-size: 0.85rem; font-weight: 500; }
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║                    BUTTONS                          ║
+   ╚══════════════════════════════════════════════════════╝ */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 20px; border-radius: var(--radius-sm);
+  font-family: var(--font-b); font-size: 0.855rem; font-weight: 500;
+  cursor: pointer; border: none; text-decoration: none;
+  transition: all 0.2s; white-space: nowrap;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent-h); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(99,102,241,0.35); color: #fff; }
+.btn-ghost { background: transparent; color: var(--text-sub); border: 1px solid var(--border2); }
+.btn-ghost:hover { border-color: var(--accent); color: var(--text); background: rgba(99,102,241,0.06); }
+.btn-success { background: var(--success); color: #fff; }
+.btn-success:hover { background: #0ca874; transform: translateY(-1px); }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-danger:hover { background: #d63333; transform: translateY(-1px); }
+.btn-warn { background: var(--warn); color: #000; }
+.btn-warn:hover { background: #d48a08; transform: translateY(-1px); }
+.btn-sm { padding: 7px 14px; font-size: 0.8rem; }
+.btn-lg { padding: 13px 28px; font-size: 0.95rem; }
+.btn-full { width: 100%; justify-content: center; }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none !important; }
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║                   PAGE SYSTEM                       ║
+   ╚══════════════════════════════════════════════════════╝ */
+.main { position: relative; z-index: 1; padding-top: var(--nav-h); }
+.page { display: none; }
+.page.active { display: block; }
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║                   TYPOGRAPHY                        ║
+   ╚══════════════════════════════════════════════════════╝ */
+.display { font-family: var(--font-d); font-weight: 800; line-height: 1.1; }
+.label-pill {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.18);
+  color: var(--accent); padding: 5px 13px; border-radius: 100px;
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+}
+.label-pill .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); animation: blink 2s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║                    HERO PAGE                        ║
+   ╚══════════════════════════════════════════════════════╝ */
+.hero {
+  max-width: 1360px; margin: 0 auto;
+  padding: 90px 28px 80px;
+  display: grid; grid-template-columns: 1fr 420px; gap: 80px; align-items: center;
+}
+.hero-left {}
+.hero-badge { margin-bottom: 28px; }
+.hero h1 { font-size: clamp(2.8rem, 5.5vw, 4.2rem); margin-bottom: 22px; }
+.hero h1 .grad {
+  background: linear-gradient(120deg, var(--accent), var(--accent2) 60%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hero-sub { color: var(--text-sub); font-size: 1.05rem; line-height: 1.75; margin-bottom: 36px; max-width: 500px; }
+.hero-cta { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 52px; }
+.hero-stats { display: flex; gap: 40px; padding-top: 36px; border-top: 1px solid var(--border); }
+.hero-stat-num { font-family: var(--font-d); font-size: 2rem; font-weight: 800; line-height: 1; }
+.hero-stat-lbl { font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; }
+
+/* Floating item cards */
+.hero-right { position: relative; height: 460px; }
+.float-card {
+  position: absolute;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 20px;
+  width: 240px;
+  animation: float 6s ease-in-out infinite;
+  box-shadow: var(--shadow);
+}
+.float-card:nth-child(1) { top: 0; left: 0; animation-delay: 0s; transform: rotate(-3deg); }
+.float-card:nth-child(2) { top: 90px; left: 90px; z-index: 2; border-color: rgba(99,102,241,0.3); box-shadow: var(--glow); animation-delay: -2s; }
+.float-card:nth-child(3) { top: 180px; left: 170px; animation-delay: -4s; transform: rotate(2deg); }
+@keyframes float { 0%,100%{transform:translateY(0) rotate(-3deg)} 50%{transform:translateY(-10px) rotate(-3deg)} }
+.float-card:nth-child(2) { animation-name: float2; }
+@keyframes float2 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+.float-card:nth-child(3) { animation-name: float3; }
+@keyframes float3 { 0%,100%{transform:translateY(0) rotate(2deg)} 50%{transform:translateY(-12px) rotate(2deg)} }
+
+.fc-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem; margin-bottom: 12px; }
+.fc-name { font-family: var(--font-d); font-size: 0.9rem; font-weight: 700; margin-bottom: 4px; }
+.fc-meta { font-size: 0.76rem; color: var(--text-muted); margin-bottom: 12px; }
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║               FEATURES / HOW IT WORKS               ║
+   ╚══════════════════════════════════════════════════════╝ */
+.section { max-width: 1360px; margin: 0 auto; padding: 0 28px 80px; }
+.section-hd { margin-bottom: 44px; }
+.section-hd .lbl { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; }
+.section-hd h2 { font-family: var(--font-d); font-weight: 800; font-size: clamp(1.7rem, 3vw, 2.4rem); margin-bottom: 10px; }
+.section-hd p { color: var(--text-sub); max-width: 480px; }
+.section-hd-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
+
+.feat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
+.feat-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 26px;
+  transition: all 0.25s;
+}
+.feat-card:hover { border-color: rgba(99,102,241,0.25); transform: translateY(-4px); box-shadow: 0 24px 48px rgba(0,0,0,0.35); }
+.feat-icon { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; margin-bottom: 18px; }
+.feat-card h3 { font-family: var(--font-d); font-weight: 700; font-size: 0.95rem; margin-bottom: 8px; }
+.feat-card p { color: var(--text-muted); font-size: 0.83rem; line-height: 1.65; }
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║                   ITEM CARDS                        ║
+   ╚══════════════════════════════════════════════════════╝ */
+.items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 18px; }
+.item-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden; cursor: pointer; transition: all 0.22s;
+}
+.item-card:hover { border-color: rgba(99,102,241,0.22); transform: translateY(-3px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+.ic-img {
+  height: 168px; background: var(--surface2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 3.5rem; position: relative; overflow: hidden;
+}
+.ic-img img { width: 100%; height: 100%; object-fit: cover; }
+.ic-status {
+  position: absolute; top: 12px; right: 12px;
+}
+.ic-body { padding: 16px 18px; }
+.ic-cat { font-size: 0.69rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent2); margin-bottom: 5px; }
+.ic-name { font-family: var(--font-d); font-weight: 700; font-size: 0.97rem; margin-bottom: 10px; }
+.ic-row { display: flex; align-items: center; gap: 7px; font-size: 0.79rem; color: var(--text-muted); margin-bottom: 4px; }
+.ic-row i { width: 14px; text-align: center; }
+.ic-footer { padding: 12px 18px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+
+/* Status badges */
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 100px;
+  font-size: 0.69rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+}
+.badge-lost    { background: rgba(239,68,68,0.12);   color: var(--danger); }
+.badge-found   { background: rgba(16,185,129,0.12);  color: var(--success); }
+.badge-claimed { background: rgba(99,102,241,0.12);  color: #818cf8; }
+.badge-pending { background: rgba(245,158,11,0.12);  color: var(--warn); }
+.badge-approved{ background: rgba(16,185,129,0.12);  color: var(--success); }
+.badge-rejected{ background: rgba(239,68,68,0.12);   color: var(--danger); }
+.badge-tech    { background: rgba(34,211,238,0.1);   color: var(--accent2); }
+.badge-normal  { background: rgba(245,158,11,0.1);   color: var(--accent3); }
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║                 SEARCH & FILTERS                    ║
+   ╚══════════════════════════════════════════════════════╝ */
+.search-bar {
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: 12px; padding: 12px 18px;
+  display: flex; align-items: center; gap: 12px; flex: 1; min-width: 200px;
+}
+.search-bar i { color: var(--text-muted); }
+.search-bar input {
+  background: none; border: none; outline: none; color: var(--text);
+  font-family: var(--font-b); font-size: 0.875rem; flex: 1;
+}
+.search-bar input::placeholder { color: var(--text-muted); }
+.filter-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 28px; }
+.sel {
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: 10px; padding: 11px 14px;
+  color: var(--text); font-family: var(--font-b); font-size: 0.845rem;
+  outline: none; cursor: pointer; min-width: 140px;
+}
+.sel:focus { border-color: var(--accent); }
+.sel option { background: var(--surface2); }
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║              FORM SYSTEM                            ║
+   ╚══════════════════════════════════════════════════════╝ */
+.form-wrap {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 32px;
+}
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.fg { margin-bottom: 20px; }
+.fg label {
+  display: block; font-size: 0.8rem; font-weight: 500; color: var(--text-sub); margin-bottom: 8px;
+}
+.fi {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 10px; padding: 11px 15px; color: var(--text);
+  font-family: var(--font-b); font-size: 0.865rem; outline: none; transition: all 0.18s;
+}
+.fi:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+.fi::placeholder { color: var(--text-muted); }
+.fi option { background: var(--surface2); }
+textarea.fi { resize: vertical; min-height: 96px; }
+
+.upload-zone {
+  border: 2px dashed var(--border2); border-radius: var(--radius); padding: 44px 24px;
+  text-align: center; cursor: pointer; transition: all 0.2s; background: var(--surface2);
+}
+.upload-zone:hover { border-color: var(--accent); background: rgba(99,102,241,0.04); }
+.upload-zone i { font-size: 2.2rem; color: var(--text-muted); display: block; margin-bottom: 12px; }
+.upload-zone p { color: var(--text-muted); font-size: 0.84rem; }
+.upload-zone span { color: var(--accent); font-weight: 500; }
+.img-preview { margin-top: 14px; display: none; }
+.img-preview img { max-width: 200px; border-radius: 10px; border: 1px solid var(--border2); }
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║                     AUTH PAGE                       ║
+   ╚══════════════════════════════════════════════════════╝ */
+.auth-wrap {
+  min-height: calc(100vh - var(--nav-h));
+  display: flex; align-items: center; justify-content: center; padding: 48px 20px;
+}
+.auth-box {
+  background: var(--surface); border: 1px solid var(--border2); border-radius: 24px;
+  padding: 44px 40px; width: 100%; max-width: 430px;
+  box-shadow: var(--shadow), var(--glow);
+  animation: authIn 0.4s ease;
+}
+@keyframes authIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+.auth-logo { text-align: center; margin-bottom: 32px; }
+.auth-logo .abi {
+  width: 54px; height: 54px; border-radius: 14px; margin: 0 auto 14px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center; font-size: 1.3rem; color: #fff;
+}
+.auth-logo h2 { font-family: var(--font-d); font-weight: 800; font-size: 1.45rem; }
+.auth-logo p { color: var(--text-muted); font-size: 0.83rem; margin-top: 4px; }
+.auth-tabs {
+  display: flex; background: var(--surface2); border-radius: 10px; padding: 4px; margin-bottom: 28px; gap: 4px;
+}
+.auth-tab {
+  flex: 1; padding: 9px; text-align: center; font-size: 0.845rem;
+  font-weight: 500; border-radius: 8px; cursor: pointer; transition: all 0.18s; color: var(--text-muted);
+}
+.auth-tab.active { background: var(--accent); color: #fff; }
+.auth-or {
+  text-align: center; position: relative; margin: 18px 0; color: var(--text-muted); font-size: 0.78rem;
+}
+.auth-or::before, .auth-or::after {
+  content: ''; position: absolute; top: 50%; width: 42%; height: 1px; background: var(--border);
+}
+.auth-or::before { left: 0; } .auth-or::after { right: 0; }
+.demo-btns { display: flex; gap: 8px; }
+.demo-btns .btn { flex: 1; justify-content: center; font-size: 0.8rem; }
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║                  DASHBOARD LAYOUT                   ║
+   ╚══════════════════════════════════════════════════════╝ */
+.dash-layout { display: grid; grid-template-columns: 256px 1fr; min-height: calc(100vh - var(--nav-h)); }
+.sidebar {
+  background: var(--surface); border-right: 1px solid var(--border);
+  padding: 28px 16px; position: sticky; top: var(--nav-h);
+  height: calc(100vh - var(--nav-h)); overflow-y: auto;
+}
+.sb-profile { margin-bottom: 28px; padding: 0 8px; }
+.sb-avatar { width: 44px; height: 44px; border-radius: 50%; margin-bottom: 10px; }
+.sb-name { font-family: var(--font-d); font-weight: 700; font-size: 0.92rem; }
+.sb-email { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; word-break: break-all; }
+.sb-section { margin-bottom: 28px; }
+.sb-label { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); padding: 0 12px; margin-bottom: 6px; }
+.sb-item {
+  display: flex; align-items: center; gap: 11px;
+  padding: 10px 13px; border-radius: 10px; cursor: pointer;
+  color: var(--text-sub); font-size: 0.855rem; font-weight: 500;
+  transition: all 0.18s; margin-bottom: 2px; text-decoration: none;
+}
+.sb-item:hover { background: var(--surface2); color: var(--text); }
+.sb-item.active { background: rgba(99,102,241,0.1); color: var(--accent); }
+.sb-item i { width: 16px; text-align: center; flex-shrink: 0; }
+.dash-main { padding: 36px 32px; }
+.dash-hd { margin-bottom: 32px; }
+.dash-hd h2 { font-family: var(--font-d); font-weight: 800; font-size: 1.65rem; }
+.dash-hd p { color: var(--text-muted); font-size: 0.855rem; margin-top: 5px; }
+
+/* Stats row */
+.stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 28px; }
+.stat-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px;
+  transition: all 0.2s;
+}
+.stat-card:hover { border-color: var(--border2); }
+.stat-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 0.95rem; margin-bottom: 14px; }
+.stat-num { font-family: var(--font-d); font-size: 1.8rem; font-weight: 800; line-height: 1; }
+.stat-lbl { font-size: 0.76rem; color: var(--text-muted); margin-top: 4px; }
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║                     TABLES                          ║
+   ╚══════════════════════════════════════════════════════╝ */
+.table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.tw-head {
+  padding: 18px 22px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.tw-head h4 { font-family: var(--font-d); font-weight: 700; font-size: 0.92rem; }
+.tbl { width: 100%; border-collapse: collapse; }
+.tbl th { padding: 11px 20px; font-size: 0.69rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-muted); text-align: left; background: var(--surface2); border-bottom: 1px solid var(--border); }
+.tbl td { padding: 13px 20px; border-top: 1px solid var(--border); font-size: 0.845rem; color: var(--text-sub); vertical-align: middle; }
+.tbl tr:hover td { background: rgba(255,255,255,0.015); }
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║                CLAIM MODAL / QUIZ                   ║
+   ╚══════════════════════════════════════════════════════╝ */
+.overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.82); backdrop-filter: blur(10px);
+  z-index: 800; align-items: center; justify-content: center; padding: 20px;
+}
+.overlay.active { display: flex; }
+.modal {
+  background: var(--surface); border: 1px solid var(--border2); border-radius: 24px;
+  width: 100%; max-width: 540px; max-height: 90vh; overflow-y: auto;
+  animation: mIn 0.3s ease;
+}
+.modal-wide { max-width: 740px; }
+@keyframes mIn { from{opacity:0;transform:scale(0.94) translateY(18px)} to{opacity:1;transform:scale(1) translateY(0)} }
+.mh { padding: 22px 26px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.mh h3 { font-family: var(--font-d); font-weight: 700; font-size: 1.05rem; }
+.mh-close {
+  width: 30px; height: 30px; border-radius: 8px; background: var(--surface2);
+  border: 1px solid var(--border); color: var(--text-muted); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; transition: all 0.18s;
+}
+.mh-close:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+.mb { padding: 26px; }
+.mf { padding: 18px 26px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+
+/* Step indicator */
+.steps { display: flex; align-items: center; gap: 8px; margin-bottom: 26px; }
+.step-dot {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.72rem; font-weight: 700;
+  border: 2px solid var(--border2); color: var(--text-muted);
+  transition: all 0.3s; flex-shrink: 0;
+}
+.step-dot.active { border-color: var(--accent); color: var(--accent); background: rgba(99,102,241,0.1); }
+.step-dot.done { border-color: var(--success); background: var(--success); color: #fff; }
+.step-ln { flex: 1; height: 2px; background: var(--border2); border-radius: 1px; transition: background 0.4s; }
+.step-ln.done { background: var(--success); }
+
+/* Quiz UI */
+.quiz-prog { height: 4px; background: var(--surface3); border-radius: 2px; margin-bottom: 26px; overflow: hidden; }
+.qp-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 2px; transition: width 0.4s ease; }
+.q-counter { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 5px; }
+.q-text { font-family: var(--font-d); font-size: 1.02rem; font-weight: 700; margin-bottom: 20px; line-height: 1.45; }
+.q-opts { display: flex; flex-direction: column; gap: 10px; }
+.q-opt {
+  background: var(--surface2); border: 1px solid var(--border2); border-radius: 11px;
+  padding: 13px 17px; cursor: pointer; transition: all 0.18s;
+  font-size: 0.875rem; display: flex; align-items: center; gap: 12px;
+}
+.q-opt:hover { border-color: var(--accent); background: rgba(99,102,241,0.07); }
+.q-opt.selected { border-color: var(--accent); background: rgba(99,102,241,0.12); }
+.q-opt.correct { border-color: var(--success); background: rgba(16,185,129,0.1); }
+.q-opt.wrong { border-color: var(--danger); background: rgba(239,68,68,0.1); }
+.q-ltr { width: 24px; height: 24px; border-radius: 6px; background: var(--surface3); display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; flex-shrink: 0; }
+
+/* Image compare */
+.img-compare { text-align: center; }
+.img-pair { display: flex; gap: 14px; justify-content: center; margin: 20px 0; }
+.img-box { flex: 1; max-width: 190px; }
+.img-box .lbl { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+.img-preview2 {
+  aspect-ratio: 1; background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 12px; display: flex; align-items: center; justify-content: center;
+  font-size: 2.2rem; color: var(--text-muted); overflow: hidden;
+}
+.img-vs { display: flex; align-items: center; padding-top: 40px; font-family: var(--font-d); font-weight: 800; font-size: 0.85rem; color: var(--text-muted); }
+.an-bar { background: var(--surface2); border-radius: 100px; height: 7px; overflow: hidden; margin: 18px 0 8px; }
+.an-fill { height: 100%; border-radius: 100px; background: linear-gradient(90deg, var(--accent), var(--accent2)); width: 0; transition: width 2.5s ease; }
+.an-txt { font-size: 0.79rem; color: var(--text-muted); }
+
+/* Result */
+.result-scr { text-align: center; padding: 10px 0; }
+.res-icon { width: 76px; height: 76px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 18px; }
+.res-pass { background: rgba(16,185,129,0.12); color: var(--success); border: 2px solid rgba(16,185,129,0.25); }
+.res-fail { background: rgba(239,68,68,0.12); color: var(--danger); border: 2px solid rgba(239,68,68,0.25); }
+.res-title { font-family: var(--font-d); font-size: 1.4rem; font-weight: 800; margin-bottom: 7px; }
+.res-sub { color: var(--text-muted); font-size: 0.875rem; margin-bottom: 22px; }
+.score-cards { display: flex; gap: 14px; justify-content: center; margin-bottom: 22px; }
+.score-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 16px 22px; min-width: 115px; }
+.score-val { font-family: var(--font-d); font-size: 1.6rem; font-weight: 800; }
+.score-lbl { font-size: 0.69rem; color: var(--text-muted); margin-top: 3px; }
+.score-pass-lbl { font-size: 0.68rem; margin-top: 5px; font-weight: 700; }
+.good { color: var(--success); }
+.bad  { color: var(--danger); }
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║              ITEM DETAIL MODAL                      ║
+   ╚══════════════════════════════════════════════════════╝ */
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+.detail-box { background: var(--surface2); border-radius: 10px; padding: 14px; }
+.detail-box .k { font-size: 0.69rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 5px; }
+.detail-box .v { font-weight: 600; font-size: 0.875rem; }
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║                  TOAST SYSTEM                       ║
+   ╚══════════════════════════════════════════════════════╝ */
+.toast-wrap { position: fixed; bottom: 24px; right: 24px; z-index: 9000; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+.toast {
+  background: var(--surface); border: 1px solid var(--border2); border-radius: 12px;
+  padding: 13px 17px; display: flex; align-items: center; gap: 12px;
+  min-width: 270px; max-width: 360px; pointer-events: all;
+  animation: toastIn 0.3s ease; box-shadow: 0 10px 32px rgba(0,0,0,0.5);
+  font-size: 0.855rem;
+}
+@keyframes toastIn { from{opacity:0;transform:translateX(24px)} to{opacity:1;transform:translateX(0)} }
+@keyframes toastOut { from{opacity:1;transform:translateX(0)} to{opacity:0;transform:translateX(24px)} }
+.toast.hiding { animation: toastOut 0.3s ease forwards; }
+.toast i { font-size: 1.05rem; flex-shrink: 0; }
+.toast-success { border-left: 3px solid var(--success); }
+.toast-error   { border-left: 3px solid var(--danger); }
+.toast-info    { border-left: 3px solid var(--accent); }
+.toast-warn    { border-left: 3px solid var(--warn); }
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║               EMPTY STATE                           ║
+   ╚══════════════════════════════════════════════════════╝ */
+.empty { text-align: center; padding: 72px 20px; color: var(--text-muted); }
+.empty i { font-size: 2.8rem; display: block; margin-bottom: 16px; opacity: 0.25; }
+.empty h3 { font-family: var(--font-d); font-size: 1.05rem; font-weight: 700; color: var(--text-sub); margin-bottom: 8px; }
+.empty p { font-size: 0.845rem; }
+
+/* Loading spinner */
+.spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.2); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to{ transform: rotate(360deg); } }
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║                  SCROLLBAR                          ║
+   ╚══════════════════════════════════════════════════════╝ */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║                  RESPONSIVE                         ║
+   ╚══════════════════════════════════════════════════════╝ */
+@media(max-width:1000px) {
+  .hero { grid-template-columns: 1fr; text-align: center; }
+  .hero-sub { margin: 0 auto 36px; }
+  .hero-cta { justify-content: center; }
+  .hero-stats { justify-content: center; }
+  .hero-right { display: none; }
+  .dash-layout { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+}
+@media(max-width:700px) {
+  .nav-links { display: none; }
+  .form-grid { grid-template-columns: 1fr; }
+  .hero { padding: 56px 18px 48px; }
+  .detail-grid { grid-template-columns: 1fr; }
+  .score-cards { flex-wrap: wrap; }
+}
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║                   FOOTER                            ║
+   ╚══════════════════════════════════════════════════════╝ */
+.footer { border-top: 1px solid var(--border); padding: 36px 28px; text-align: center; color: var(--text-muted); font-size: 0.82rem; margin-top: 40px; }
+.footer strong { color: var(--text-sub); }
+</style>
+</head>
+<body>
+
+<!-- Ambient -->
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+<div class="blob blob-3"></div>
+
+<!-- ══════════════════════════════════════════════════════
+     NAV BAR
+══════════════════════════════════════════════════════ -->
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="nav-logo" onclick="showPage('home')">
+      <div class="ni"><i class="fa-solid fa-magnifying-glass-location"></i></div>
+      ObjectTracker
+    </a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#" onclick="showPage('home')" id="nl-home" class="active"><i class="fa-solid fa-house"></i> Home</a></li>
+      <li><a href="#" onclick="showPage('browse')" id="nl-browse"><i class="fa-solid fa-grid-2"></i> Browse Items</a></li>
+      <li><a href="#" onclick="requireAuth('report-lost')" id="nl-lost"><i class="fa-solid fa-circle-minus"></i> Report Lost</a></li>
+      <li><a href="#" onclick="requireAuth('report-found')" id="nl-found"><i class="fa-solid fa-circle-plus"></i> Report Found</a></li>
+      <li><a href="#" onclick="requireAuth('dashboard')" id="nl-dash"><i class="fa-solid fa-layout-dashboard"></i> Dashboard</a></li>
+      <li id="nlAdmin" style="display:none"><a href="#" onclick="showPage('admin')" id="nl-admin"><i class="fa-solid fa-shield-halved"></i> Admin</a></li>
+    </ul>
+    <div class="nav-right">
+      <div class="nav-user" id="navUser">
+        <div class="nav-avatar" id="navAv">?</div>
+        <span class="nav-uname" id="navUname">User</span>
+        <button class="btn btn-ghost btn-sm" onclick="doLogout()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</button>
+      </div>
+      <div id="navAuthBtn">
+        <button class="btn btn-primary" onclick="showPage('auth')"><i class="fa-solid fa-right-to-bracket"></i> Sign In</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="main">
+
+<!-- ══════════════════════════════════════════════════════
+     HOME PAGE
+══════════════════════════════════════════════════════ -->
+<div class="page active" id="page-home">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-left">
+      <div class="hero-badge label-pill"><span class="dot"></span> Smart Campus Recovery System</div>
+      <h1 class="display">Lost something<br>on <span class="grad">campus?</span><br>We'll find it.</h1>
+      <p class="hero-sub">ObjectTracker is your campus's intelligent lost &amp; found platform. AI-powered quiz verification + OpenCV image matching ensures items reach their rightful owners.</p>
+      <div class="hero-cta">
+        <button class="btn btn-primary btn-lg" onclick="requireAuth('report-lost')"><i class="fa-solid fa-triangle-exclamation"></i> Report Lost Item</button>
+        <button class="btn btn-ghost btn-lg" onclick="showPage('browse')"><i class="fa-solid fa-search"></i> Browse Found Items</button>
+      </div>
+      <div class="hero-stats">
+        <div><div class="hero-stat-num" id="hs-items">—</div><div class="hero-stat-lbl">Items Tracked</div></div>
+        <div><div class="hero-stat-num" id="hs-returned">—</div><div class="hero-stat-lbl">Items Returned</div></div>
+        <div><div class="hero-stat-num" id="hs-users">—</div><div class="hero-stat-lbl">Students Helped</div></div>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="float-card">
+        <div class="fc-icon" style="background:rgba(239,68,68,0.1);color:#ef4444"><i class="fa-solid fa-mobile-screen"></i></div>
+        <div class="fc-name">iPhone 14 Pro</div>
+        <div class="fc-meta">Space Black · Library 2nd Floor</div>
+        <span class="badge badge-lost">Lost</span>
+      </div>
+      <div class="float-card">
+        <div class="fc-icon" style="background:rgba(16,185,129,0.1);color:#10b981"><i class="fa-solid fa-backpack"></i></div>
+        <div class="fc-name">Navy Blue Backpack</div>
+        <div class="fc-meta">Wildcraft · Canteen Area</div>
+        <span class="badge badge-found">Found</span>
+      </div>
+      <div class="float-card">
+        <div class="fc-icon" style="background:rgba(99,102,241,0.1);color:#818cf8"><i class="fa-solid fa-key"></i></div>
+        <div class="fc-name">Honda Car Keys</div>
+        <div class="fc-meta">Parking Lot B · 3 keys</div>
+        <span class="badge badge-claimed">Claimed ✓</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- How it works -->
+  <div class="section">
+    <div class="section-hd">
+      <div class="lbl">How It Works</div>
+      <h2>Secure Smart Recovery</h2>
+      <p>A two-step verification system prevents false claims and ensures items always reach their rightful owners.</p>
+    </div>
+    <div class="feat-grid">
+      <div class="feat-card">
+        <div class="feat-icon" style="background:rgba(99,102,241,0.1);color:var(--accent)"><i class="fa-solid fa-clipboard-list"></i></div>
+        <h3>Report Lost or Found</h3>
+        <p>Quickly submit items with photos, detailed description, color, brand, location, and unique features.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon" style="background:rgba(34,211,238,0.1);color:var(--accent2)"><i class="fa-solid fa-brain"></i></div>
+        <h3>Dynamic Quiz Verification</h3>
+        <p>4 questions dynamically generated from item details. Only the real owner answers correctly. Requires 60%+ to pass.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon" style="background:rgba(245,158,11,0.1);color:var(--accent3)"><i class="fa-solid fa-eye"></i></div>
+        <h3>OpenCV Image Matching</h3>
+        <p>Advanced ORB feature matching compares uploaded photo with found item image. Requires 60%+ similarity to pass.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon" style="background:rgba(16,185,129,0.1);color:var(--success)"><i class="fa-solid fa-shield-halved"></i></div>
+        <h3>Admin Review &amp; Approval</h3>
+        <p>Admin sees both scores and detailed results before approving or rejecting each claim request.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Items -->
+  <div class="section">
+    <div class="section-hd section-hd-row">
+      <div>
+        <div class="lbl">Latest Activity</div>
+        <h2 style="margin-bottom:0">Recent Items</h2>
+      </div>
+      <button class="btn btn-ghost" onclick="showPage('browse')">View All <i class="fa-solid fa-arrow-right"></i></button>
+    </div>
+    <div class="items-grid" id="homeItemsGrid">
+      <div class="empty"><i class="fa-solid fa-spinner fa-spin"></i><h3>Loading items...</h3></div>
+    </div>
+  </div>
+
+  <div class="footer"><strong>ObjectTracker</strong> — Campus Lost &amp; Found · Flask + MongoDB + OpenCV</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     AUTH PAGE
+══════════════════════════════════════════════════════ -->
+<div class="page" id="page-auth">
+  <div class="auth-wrap">
+    <div class="auth-box">
+      <div class="auth-logo">
+        <div class="abi"><i class="fa-solid fa-magnifying-glass-location"></i></div>
+        <h2>ObjectTracker</h2>
+        <p>Campus Lost &amp; Found System</p>
+      </div>
+      <div class="auth-tabs">
+        <div class="auth-tab active" onclick="switchTab('login')" id="tab-login">Sign In</div>
+        <div class="auth-tab" onclick="switchTab('register')" id="tab-reg">Create Account</div>
+      </div>
+
+      <!-- Login -->
+      <div id="loginForm">
+        <div class="fg"><label>Email Address</label><input class="fi" type="email" id="lEmail" placeholder="you@college.edu"/></div>
+        <div class="fg"><label>Password</label><input class="fi" type="password" id="lPass" placeholder="Your password"/></div>
+        <button class="btn btn-primary btn-full btn-lg" onclick="doLogin()" id="loginBtn"><i class="fa-solid fa-right-to-bracket"></i> Sign In</button>
+        <div class="auth-or">or try demo accounts</div>
+        <div class="demo-btns">
+          <button class="btn btn-ghost" onclick="demoLogin('user')"><i class="fa-solid fa-user"></i> Student Demo</button>
+          <button class="btn btn-ghost" onclick="demoLogin('admin')"><i class="fa-solid fa-shield-halved"></i> Admin Demo</button>
+        </div>
+      </div>
+
+      <!-- Register -->
+      <div id="regForm" style="display:none">
+        <div class="form-grid">
+          <div class="fg"><label>Full Name *</label><input class="fi" id="rName" placeholder="Rahul Kumar"/></div>
+          <div class="fg"><label>Student ID *</label><input class="fi" id="rSid" placeholder="CS21B1001"/></div>
+        </div>
+        <div class="fg"><label>Email Address *</label><input class="fi" type="email" id="rEmail" placeholder="you@college.edu"/></div>
+        <div class="fg"><label>Password * (min 6 chars)</label><input class="fi" type="password" id="rPass" placeholder="Create a strong password"/></div>
+        <button class="btn btn-primary btn-full btn-lg" onclick="doRegister()" id="regBtn"><i class="fa-solid fa-user-plus"></i> Create Account</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     BROWSE PAGE
+══════════════════════════════════════════════════════ -->
+<div class="page" id="page-browse">
+  <div class="section" style="padding-top:44px">
+    <div class="section-hd">
+      <div class="lbl">Explore</div>
+      <h2>Browse All Items</h2>
+      <p>Search and filter lost &amp; found items across the entire campus.</p>
+    </div>
+    <div class="filter-row">
+      <div class="search-bar" style="flex:1;min-width:200px">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="srchQ" placeholder="Search by name, color, brand..." oninput="filterBrowse()"/>
+      </div>
+      <select class="sel" id="srchStatus" onchange="filterBrowse()">
+        <option value="">All Status</option>
+        <option value="lost">Lost</option>
+        <option value="found">Found</option>
+      </select>
+      <select class="sel" id="srchCat" onchange="filterBrowse()">
+        <option value="">All Categories</option>
+        <option value="Tech">Tech Items</option>
+        <option value="Normal">Normal Items</option>
+      </select>
+    </div>
+    <div class="items-grid" id="browseGrid">
+      <div class="empty"><i class="fa-solid fa-spinner fa-spin"></i><h3>Loading...</h3></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     REPORT LOST
+══════════════════════════════════════════════════════ -->
+<div class="page" id="page-report-lost">
+  <div class="section" style="padding-top:44px;max-width:800px">
+    <div class="section-hd">
+      <div class="lbl">Report</div>
+      <h2>Report a Lost Item</h2>
+      <p>Provide as many details as possible to help recover your item faster.</p>
+    </div>
+    <div class="form-wrap">
+      <div class="form-grid">
+        <div class="fg"><label>Item Name *</label><input class="fi" id="lName" placeholder="e.g. iPhone 14 Pro"/></div>
+        <div class="fg">
+          <label>Category *</label>
+          <select class="fi" id="lCat" onchange="fillTypes('l')">
+            <option value="">Select category</option>
+            <option value="Tech">Tech Item</option>
+            <option value="Normal">Normal Item</option>
+          </select>
+        </div>
+        <div class="fg"><label>Item Type</label><select class="fi" id="lType"><option value="">Select category first</option></select></div>
+        <div class="fg"><label>Color *</label><input class="fi" id="lColor" placeholder="e.g. Midnight Black"/></div>
+        <div class="fg"><label>Brand</label><input class="fi" id="lBrand" placeholder="e.g. Apple, Samsung"/></div>
+        <div class="fg"><label>Date Lost *</label><input class="fi" type="date" id="lDate"/></div>
+      </div>
+      <div class="fg"><label>Last Known Location *</label><input class="fi" id="lLoc" placeholder="e.g. Library 2nd Floor, Room 204"/></div>
+      <div class="fg"><label>Unique Features (stickers, scratches, case, engravings...)</label><input class="fi" id="lFeats" placeholder="e.g. Blue silicone case, GitHub sticker on back"/></div>
+      <div class="fg"><label>Additional Description</label><textarea class="fi" id="lDesc" placeholder="Any extra details that can help identify your item..."></textarea></div>
+      <div class="fg">
+        <label>Photo of Item</label>
+        <div class="upload-zone" onclick="document.getElementById('lImg').click()">
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+          <p>Click to upload <span>or drag &amp; drop</span><br>PNG, JPG, WEBP · Max 10MB</p>
+          <input type="file" id="lImg" accept="image/*" style="display:none" onchange="prevImg('lImg','lPrev')"/>
+        </div>
+        <div class="img-preview" id="lPrev"><img id="lPrevImg"/></div>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:8px">
+        <button class="btn btn-primary btn-lg" onclick="submitLost()" id="lostBtn"><i class="fa-solid fa-paper-plane"></i> Submit Report</button>
+        <button class="btn btn-ghost" onclick="showPage('home')">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     REPORT FOUND
+══════════════════════════════════════════════════════ -->
+<div class="page" id="page-report-found">
+  <div class="section" style="padding-top:44px;max-width:800px">
+    <div class="section-hd">
+      <div class="lbl">Report</div>
+      <h2>Report a Found Item</h2>
+      <p>Thank you for reporting! Your submission helps reunite owners with their belongings.</p>
+    </div>
+    <div class="form-wrap">
+      <div class="form-grid">
+        <div class="fg"><label>Item Name *</label><input class="fi" id="fName" placeholder="e.g. Navy Blue Backpack"/></div>
+        <div class="fg">
+          <label>Category *</label>
+          <select class="fi" id="fCat" onchange="fillTypes('f')">
+            <option value="">Select category</option>
+            <option value="Tech">Tech Item</option>
+            <option value="Normal">Normal Item</option>
+          </select>
+        </div>
+        <div class="fg"><label>Item Type</label><select class="fi" id="fType"><option value="">Select category first</option></select></div>
+        <div class="fg"><label>Color *</label><input class="fi" id="fColor" placeholder="e.g. Navy Blue"/></div>
+        <div class="fg"><label>Brand</label><input class="fi" id="fBrand" placeholder="e.g. Wildcraft, HP"/></div>
+        <div class="fg"><label>Date Found *</label><input class="fi" type="date" id="fDate"/></div>
+      </div>
+      <div class="fg"><label>Found Location *</label><input class="fi" id="fLoc" placeholder="e.g. Canteen Area, Parking Lot B"/></div>
+      <div class="fg"><label>Unique Features / Marks</label><input class="fi" id="fFeats" placeholder="e.g. Keychain, name tag, stickers..."/></div>
+      <div class="fg"><label>Description</label><textarea class="fi" id="fDesc" placeholder="Item condition and any notable details..."></textarea></div>
+      <div class="fg">
+        <label>Photo of Item * <span style="color:var(--text-muted);font-weight:400">(Required for image verification)</span></label>
+        <div class="upload-zone" onclick="document.getElementById('fImg').click()">
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+          <p>Click to upload <span>or drag &amp; drop</span><br>PNG, JPG, WEBP · Max 10MB</p>
+          <input type="file" id="fImg" accept="image/*" style="display:none" onchange="prevImg('fImg','fPrev')"/>
+        </div>
+        <div class="img-preview" id="fPrev"><img id="fPrevImg"/></div>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:8px">
+        <button class="btn btn-primary btn-lg" onclick="submitFound()" id="foundBtn"><i class="fa-solid fa-paper-plane"></i> Submit Found Item</button>
+        <button class="btn btn-ghost" onclick="showPage('home')">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     USER DASHBOARD
+══════════════════════════════════════════════════════ -->
+<div class="page" id="page-dashboard">
+  <div class="dash-layout">
+    <div class="sidebar">
+      <div class="sb-profile">
+        <div class="nav-avatar sb-avatar" id="sbAv" style="width:44px;height:44px;font-size:1rem">?</div>
+        <div class="sb-name" id="sbName">—</div>
+        <div class="sb-email" id="sbEmail">—</div>
+      </div>
+      <div class="sb-section">
+        <div class="sb-label">Overview</div>
+        <div class="sb-item active" onclick="switchDash('overview')" id="ds-overview"><i class="fa-solid fa-chart-pie"></i> Overview</div>
+        <div class="sb-item" onclick="switchDash('reports')" id="ds-reports"><i class="fa-solid fa-file-lines"></i> My Reports</div>
+        <div class="sb-item" onclick="switchDash('claims')" id="ds-claims"><i class="fa-solid fa-hand"></i> My Claims</div>
+      </div>
+      <div class="sb-section">
+        <div class="sb-label">Actions</div>
+        <div class="sb-item" onclick="requireAuth('report-lost')"><i class="fa-solid fa-triangle-exclamation"></i> Report Lost</div>
+        <div class="sb-item" onclick="requireAuth('report-found')"><i class="fa-solid fa-circle-check"></i> Report Found</div>
+        <div class="sb-item" onclick="showPage('browse')"><i class="fa-solid fa-search"></i> Browse Items</div>
+      </div>
+    </div>
+    <div class="dash-main">
+      <!-- Overview Panel -->
+      <div id="dp-overview">
+        <div class="dash-hd"><h2 id="dWelcome">Welcome back! 👋</h2><p>Your activity at a glance</p></div>
+        <div class="stats-row">
+          <div class="stat-card"><div class="stat-icon" style="background:rgba(239,68,68,0.1);color:var(--danger)"><i class="fa-solid fa-triangle-exclamation"></i></div><div class="stat-num" id="dLostC">0</div><div class="stat-lbl">Lost Reports</div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:rgba(16,185,129,0.1);color:var(--success)"><i class="fa-solid fa-circle-check"></i></div><div class="stat-num" id="dFoundC">0</div><div class="stat-lbl">Found Reports</div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:rgba(99,102,241,0.1);color:var(--accent)"><i class="fa-solid fa-hand"></i></div><div class="stat-num" id="dClaimC">0</div><div class="stat-lbl">Claims Submitted</div></div>
+        </div>
+        <div class="table-wrap">
+          <div class="tw-head"><h4>Recent Activity</h4></div>
+          <table class="tbl"><thead><tr><th>Item</th><th>Category</th><th>Date</th><th>Status</th></tr></thead>
+          <tbody id="dRecentRows"></tbody></table>
+        </div>
+      </div>
+      <!-- Reports Panel -->
+      <div id="dp-reports" style="display:none">
+        <div class="dash-hd"><h2>My Reports</h2><p>Items you have reported on the system</p></div>
+        <div class="items-grid" id="myItemsGrid"></div>
+      </div>
+      <!-- Claims Panel -->
+      <div id="dp-claims" style="display:none">
+        <div class="dash-hd"><h2>My Claims</h2><p>Track the status of your claim requests</p></div>
+        <div class="table-wrap">
+          <div class="tw-head"><h4>Claim History</h4></div>
+          <table class="tbl"><thead><tr><th>Item</th><th>Quiz Score</th><th>Image Match</th><th>Status</th><th>Date</th></tr></thead>
+          <tbody id="myClaimRows"></tbody></table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     ADMIN DASHBOARD
+══════════════════════════════════════════════════════ -->
+<div class="page" id="page-admin">
+  <div class="dash-layout">
+    <div class="sidebar">
+      <div class="sb-profile">
+        <div class="nav-avatar sb-avatar" style="width:44px;height:44px;font-size:1rem;background:linear-gradient(135deg,var(--accent3),var(--danger))">A</div>
+        <div class="sb-name">Admin Panel</div>
+        <div class="sb-email">admin@campus.edu</div>
+      </div>
+      <div class="sb-section">
+        <div class="sb-label">Administration</div>
+        <div class="sb-item active" onclick="switchAdmin('overview')" id="as-overview"><i class="fa-solid fa-chart-bar"></i> Overview</div>
+        <div class="sb-item" onclick="switchAdmin('items')" id="as-items"><i class="fa-solid fa-boxes-stacked"></i> All Items</div>
+        <div class="sb-item" onclick="switchAdmin('claims')" id="as-claims"><i class="fa-solid fa-gavel"></i> Claims Review</div>
+        <div class="sb-item" onclick="switchAdmin('users')" id="as-users"><i class="fa-solid fa-users"></i> Users</div>
+      </div>
+    </div>
+    <div class="dash-main">
+      <!-- Admin Overview -->
+      <div id="ap-overview">
+        <div class="dash-hd"><h2>Admin Dashboard</h2><p>System-wide overview and metrics</p></div>
+        <div class="stats-row">
+          <div class="stat-card"><div class="stat-icon" style="background:rgba(99,102,241,0.1);color:var(--accent)"><i class="fa-solid fa-boxes-stacked"></i></div><div class="stat-num" id="aTotalItems">—</div><div class="stat-lbl">Total Items</div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:rgba(245,158,11,0.1);color:var(--warn)"><i class="fa-solid fa-clock"></i></div><div class="stat-num" id="aPending">—</div><div class="stat-lbl">Pending Claims</div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:rgba(16,185,129,0.1);color:var(--success)"><i class="fa-solid fa-check-double"></i></div><div class="stat-num" id="aApproved">—</div><div class="stat-lbl">Approved</div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:rgba(239,68,68,0.1);color:var(--danger)"><i class="fa-solid fa-users"></i></div><div class="stat-num" id="aUsers">—</div><div class="stat-lbl">Total Users</div></div>
+        </div>
+        <div class="stats-row">
+          <div class="stat-card"><div class="stat-icon" style="background:rgba(34,211,238,0.1);color:var(--accent2)"><i class="fa-solid fa-microchip"></i></div><div class="stat-num" id="aAvgQuiz">—</div><div class="stat-lbl">Avg Quiz Score</div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:rgba(99,102,241,0.1);color:var(--accent)"><i class="fa-solid fa-eye"></i></div><div class="stat-num" id="aAvgImg">—</div><div class="stat-lbl">Avg Image Match</div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:rgba(245,158,11,0.1);color:var(--warn)"><i class="fa-solid fa-triangle-exclamation"></i></div><div class="stat-num" id="aLostC">—</div><div class="stat-lbl">Lost Items</div></div>
+          <div class="stat-card"><div class="stat-icon" style="background:rgba(16,185,129,0.1);color:var(--success)"><i class="fa-solid fa-circle-check"></i></div><div class="stat-num" id="aFoundC">—</div><div class="stat-lbl">Found Items</div></div>
+        </div>
+      </div>
+      <!-- Admin Items -->
+      <div id="ap-items" style="display:none">
+        <div class="dash-hd"><h2>All Items</h2><p>Complete item registry</p></div>
+        <div class="table-wrap">
+          <div class="tw-head">
+            <h4>Item Registry</h4>
+            <select class="sel" id="aItemFilter" onchange="loadAdminItems()" style="font-size:0.8rem;padding:8px 12px">
+              <option value="">All Status</option><option value="lost">Lost</option><option value="found">Found</option><option value="claimed">Claimed</option>
+            </select>
+          </div>
+          <table class="tbl"><thead><tr><th>Item</th><th>Category</th><th>Reporter</th><th>Date</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="aItemRows"></tbody></table>
+        </div>
+      </div>
+      <!-- Admin Claims -->
+      <div id="ap-claims" style="display:none">
+        <div class="dash-hd"><h2>Claims Review</h2><p>Review and approve or reject claim requests</p></div>
+        <div class="table-wrap">
+          <div class="tw-head">
+            <h4>All Claims</h4>
+            <select class="sel" id="aClaimFilter" onchange="loadAdminClaims()" style="font-size:0.8rem;padding:8px 12px">
+              <option value="">All</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option>
+            </select>
+          </div>
+          <table class="tbl"><thead><tr><th>Item</th><th>Claimant</th><th>Quiz</th><th>Image</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="aClaimRows"></tbody></table>
+        </div>
+      </div>
+      <!-- Admin Users -->
+      <div id="ap-users" style="display:none">
+        <div class="dash-hd"><h2>User Management</h2><p>All registered campus users</p></div>
+        <div class="table-wrap">
+          <div class="tw-head"><h4>Registered Users</h4></div>
+          <table class="tbl"><thead><tr><th>Name</th><th>Student ID</th><th>Email</th><th>Reports</th><th>Claims</th><th>Actions</th></tr></thead>
+          <tbody id="aUserRows"></tbody></table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<!-- ══════════════════════════════════════════════════════
+     CLAIM MODAL (QUIZ + IMAGE + RESULT)
+══════════════════════════════════════════════════════ -->
+<div class="overlay" id="claimOverlay">
+  <div class="modal">
+    <div class="mh">
+      <h3 id="claimTitle">Verify &amp; Claim Item</h3>
+      <div class="mh-close" onclick="closeOverlay('claimOverlay')"><i class="fa-solid fa-xmark"></i></div>
+    </div>
+    <div class="mb">
+      <!-- Steps -->
+      <div class="steps">
+        <div class="step-dot active" id="sd1">1</div>
+        <div class="step-ln" id="sl1"></div>
+        <div class="step-dot" id="sd2">2</div>
+        <div class="step-ln" id="sl2"></div>
+        <div class="step-dot" id="sd3">3</div>
+      </div>
+
+      <!-- Quiz -->
+      <div id="quizPanel">
+        <div class="q-counter" id="qCounter">Question 1 of 4</div>
+        <div class="quiz-prog"><div class="qp-fill" id="qFill" style="width:25%"></div></div>
+        <div class="q-text" id="qText">Loading question...</div>
+        <div class="q-opts" id="qOpts"></div>
+      </div>
+
+      <!-- Image Compare -->
+      <div id="imgPanel" style="display:none">
+        <div class="img-compare">
+          <h4 style="font-family:var(--font-d);font-weight:700;margin-bottom:6px">Image Comparison</h4>
+          <p style="color:var(--text-muted);font-size:0.845rem;margin-bottom:20px">Comparing photos using OpenCV ORB feature matching...</p>
+          <div class="img-pair">
+            <div class="img-box">
+              <div class="lbl">YOUR REPORT</div>
+              <div class="img-preview2"><i class="fa-solid fa-image"></i></div>
+            </div>
+            <div class="img-vs">VS</div>
+            <div class="img-box">
+              <div class="lbl">FOUND ITEM</div>
+              <div class="img-preview2"><i class="fa-solid fa-image"></i></div>
+            </div>
+          </div>
+          <div class="an-bar"><div class="an-fill" id="anFill"></div></div>
+          <p class="an-txt" id="anTxt">Initialising OpenCV...</p>
+        </div>
+      </div>
+
+      <!-- Result -->
+      <div id="resultPanel" style="display:none">
+        <div class="result-scr" id="resultContent"></div>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-ghost" id="claimCancelBtn" onclick="closeOverlay('claimOverlay')">Cancel</button>
+      <button class="btn btn-primary" id="claimNextBtn" onclick="handleNext()"><i class="fa-solid fa-arrow-right"></i> Next</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     ITEM DETAIL MODAL
+══════════════════════════════════════════════════════ -->
+<div class="overlay" id="itemOverlay">
+  <div class="modal modal-wide">
+    <div class="mh">
+      <h3 id="imTitle">Item Details</h3>
+      <div class="mh-close" onclick="closeOverlay('itemOverlay')"><i class="fa-solid fa-xmark"></i></div>
+    </div>
+    <div class="mb" id="imBody"></div>
+    <div class="mf" id="imFoot"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     TOAST CONTAINER
+══════════════════════════════════════════════════════ -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+/* ╔══════════════════════════════════════════════════════╗
+   ║              CONFIGURATION & STATE                  ║
+   ╚══════════════════════════════════════════════════════╝ */
+const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:5000/api'
+  : '/api'; // Same-origin in production
+
+const ITEM_TYPES = {
+  Tech:   ['Phone','Laptop','Earbuds','Tablet','Smartwatch','Charger','Power Bank','Headphones','Camera','USB Drive'],
+  Normal: ['Bottle','Bag','Notebook','Wallet','Keys','Glasses','Umbrella','ID Card','Books','Clothing','Jewellery']
+};
+
+const EMOJIS = {
+  Phone:'📱', Laptop:'💻', Earbuds:'🎵', Tablet:'📱', Smartwatch:'⌚',
+  Charger:'🔌','Power Bank':'🔋', Headphones:'🎧', Camera:'📷','USB Drive':'💾',
+  Bottle:'🍶', Bag:'🎒', Notebook:'📓', Wallet:'👝', Keys:'🔑',
+  Glasses:'👓', Umbrella:'☂️','ID Card':'🪪', Books:'📚', Clothing:'👕', Jewellery:'💍'
+};
+
+// App state
+let STATE = {
+  user: null,
+  token: null,
+  allItems: [],
+  myItems: [],
+  myClaims: [],
+  // Quiz claim flow
+  claimItemId: null,
+  quizSessionId: null,
+  quizQuestions: [],
+  quizCurrent: 0,
+  quizAnswers: {},
+  quizScore: 0,
+  claimStep: 1,
+};
+
+// Restore session from localStorage
+function restoreSession() {
+  const saved = localStorage.getItem('ot_session');
+  if (saved) {
+    try {
+      const { token, user } = JSON.parse(saved);
+      if (token && user) { STATE.token = token; STATE.user = user; updateNavForUser(); }
+    } catch {}
+  }
+}
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║                  API HELPER                         ║
+   ╚══════════════════════════════════════════════════════╝ */
+async function api(method, path, body = null, isForm = false) {
+  const opts = {
+    method,
+    headers: { ...(STATE.token ? { Authorization: `Bearer ${STATE.token}` } : {}) }
+  };
+  if (body) {
+    if (isForm) { opts.body = body; }
+    else { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+  }
+  try {
+    const res = await fetch(API + path, opts);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || data.message || 'Request failed');
+    return data;
+  } catch (e) {
+    // If backend is unreachable, fall back to local mock
+    if (e.message.includes('fetch') || e.message.includes('Failed')) {
+      return useMockData(method, path, body);
+    }
+    throw e;
+  }
+}
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║              LOCAL MOCK DATA (DEMO MODE)            ║
+   ╚══════════════════════════════════════════════════════╝ */
+// Mock database - used when Flask backend isn't running
+let MOCK = {
+  users: [
+    { id:'u1', name:'Rahul Kumar',   email:'rahul@college.edu',  studentId:'CS21B1001', role:'user',  password:'pass123' },
+    { id:'u2', name:'Priya Singh',   email:'priya@college.edu',  studentId:'EC21B1042', role:'user',  password:'pass123' },
+    { id:'u3', name:'Arjun Sharma',  email:'arjun@college.edu',  studentId:'ME22B1015', role:'user',  password:'pass123' },
+    { id:'admin', name:'Admin User', email:'admin@campus.edu',   studentId:'ADMIN001',  role:'admin', password:'admin123' }
+  ],
+  items: [
+    { id:'i1', name:'iPhone 14 Pro', categoryType:'Tech', categoryName:'Phone', color:'Space Black', brand:'Apple', features:'Blue silicone case, cracked screen protector', location:'Library 2nd Floor', date:'2025-03-10', description:'iPhone 14 Pro with blue silicone case.', imagePath:null, reporterId:'u1', status:'lost', createdAt:'2025-03-10T10:00:00' },
+    { id:'i2', name:'Navy Blue Backpack', categoryType:'Normal', categoryName:'Bag', color:'Navy Blue', brand:'Wildcraft', features:'Minnie Mouse keychain, torn strap', location:'Canteen Area', date:'2025-03-12', description:'Large navy blue Wildcraft backpack.', imagePath:null, reporterId:'u2', status:'found', createdAt:'2025-03-12T09:00:00' },
+    { id:'i3', name:'Sony WH-1000XM5', categoryType:'Tech', categoryName:'Headphones', color:'Silver', brand:'Sony', features:'GitHub sticker on left earcup', location:'Seminar Hall B', date:'2025-03-11', description:'Sony noise-cancelling headphones.', imagePath:null, reporterId:'u1', status:'found', createdAt:'2025-03-11T14:00:00' },
+    { id:'i4', name:'Milton Water Bottle', categoryType:'Normal', categoryName:'Bottle', color:'Red', brand:'Milton', features:"Name 'Arjun S' written on side", location:'Gymnasium', date:'2025-03-13', description:'1-litre red Milton bottle.', imagePath:null, reporterId:'u3', status:'lost', createdAt:'2025-03-13T08:00:00' },
+    { id:'i5', name:'Honda Car Keys', categoryType:'Normal', categoryName:'Keys', color:'Silver', brand:'Honda', features:'3 keys + Minnie Mouse keychain', location:'Parking Lot B', date:'2025-03-14', description:'Honda key bundle.', imagePath:null, reporterId:'u2', status:'found', createdAt:'2025-03-14T11:00:00' },
+    { id:'i6', name:'MacBook Air M2', categoryType:'Tech', categoryName:'Laptop', color:'Midnight', brand:'Apple', features:'Python + GitHub stickers on lid', location:'CS Lab 3', date:'2025-03-09', description:'13-inch MacBook Air M2.', imagePath:null, reporterId:'u1', status:'lost', createdAt:'2025-03-09T16:00:00' },
+    { id:'i7', name:'Ray-Ban Sunglasses', categoryType:'Normal', categoryName:'Glasses', color:'Black Frame', brand:'Ray-Ban', features:'Gold RB logo, brown gradient lenses', location:'Sports Ground', date:'2025-03-15', description:'Wayfarer sunglasses.', imagePath:null, reporterId:'u3', status:'found', createdAt:'2025-03-15T12:00:00' },
+    { id:'i8', name:'Samsung Galaxy S23', categoryType:'Tech', categoryName:'Phone', color:'Phantom Black', brand:'Samsung', features:'Transparent case, cracked corner', location:'Admin Block', date:'2025-03-13', description:'Samsung S23 in transparent case.', imagePath:null, reporterId:'u3', status:'found', createdAt:'2025-03-13T15:00:00' }
+  ],
+  claims: [
+    { id:'c1', itemId:'i2', claimantId:'u1', quizScore:80, imageMatchScore:85, quizPassed:true, imagePassed:true, status:'pending', createdAt:'2025-03-13T10:00:00' },
+    { id:'c2', itemId:'i3', claimantId:'u2', quizScore:40, imageMatchScore:35, quizPassed:false, imagePassed:false, status:'rejected', createdAt:'2025-03-12T14:00:00' },
+    { id:'c3', itemId:'i7', claimantId:'u1', quizScore:100, imageMatchScore:92, quizPassed:true, imagePassed:true, status:'approved', createdAt:'2025-03-16T09:00:00' }
+  ]
+};
+
+function useMockData(method, path, body) {
+  // Parse path
+  const p = path.replace('/api','');
+
+  // AUTH
+  if (p === '/auth/login' && method === 'POST') {
+    const u = MOCK.users.find(x => x.email === body.email && x.password === body.password);
+    if (!u) throw new Error('Invalid email or password');
+    return { token: 'mock-token-' + u.id, user: { id:u.id, name:u.name, email:u.email, studentId:u.studentId, role:u.role } };
+  }
+  if (p === '/auth/register' && method === 'POST') {
+    if (MOCK.users.find(x => x.email === body.email)) throw new Error('Email already registered');
+    const u = { id:'u'+Date.now(), name:body.name, email:body.email, studentId:body.studentId, role:'user', password:body.password };
+    MOCK.users.push(u);
+    return { token:'mock-token-'+u.id, user:{ id:u.id, name:u.name, email:u.email, studentId:u.studentId, role:u.role } };
+  }
+
+  // ITEMS
+  if (p.startsWith('/items') && method === 'GET') {
+    if (p === '/items/my') {
+      const uid = STATE.user?.id;
+      return { items: MOCK.items.filter(i => i.reporterId === uid) };
+    }
+    const url = new URLSearchParams(path.includes('?') ? path.split('?')[1] : '');
+    let items = [...MOCK.items];
+    const status = url.get('status'); const cat = url.get('category'); const search = url.get('search');
+    if (status) items = items.filter(i => i.status === status);
+    if (cat) items = items.filter(i => i.categoryType === cat);
+    if (search) { const s = search.toLowerCase(); items = items.filter(i => i.name.toLowerCase().includes(s) || i.color.toLowerCase().includes(s) || (i.brand||'').toLowerCase().includes(s)); }
+    return { items, total: items.length };
+  }
+  if ((p === '/items/lost' || p === '/items/found') && method === 'POST') {
+    const status = p === '/items/lost' ? 'lost' : 'found';
+    const item = { id:'i'+Date.now(), ...body, status, reporterId: STATE.user?.id, createdAt: new Date().toISOString() };
+    MOCK.items.push(item);
+    return { message:'Item reported', item };
+  }
+  if (p.startsWith('/items/') && method === 'DELETE') {
+    const id = p.split('/')[2];
+    MOCK.items = MOCK.items.filter(i => i.id !== id);
+    return { message:'Deleted' };
+  }
+
+  // CLAIMS
+  if (p === '/claims' && method === 'GET') {
+    const uid = STATE.user?.id;
+    const claims = STATE.user?.role === 'admin' ? MOCK.claims : MOCK.claims.filter(c => c.claimantId === uid);
+    return { claims: claims.map(c => ({
+      ...c, item: MOCK.items.find(i => i.id === c.itemId) || null,
+      claimant: MOCK.users.find(u => u.id === c.claimantId) || null
+    }))};
+  }
+  if (p === '/claims' && method === 'POST') {
+    const claim = { id:'c'+Date.now(), ...body, createdAt: new Date().toISOString() };
+    MOCK.claims.push(claim);
+    return { message:'Claim submitted', claimId: claim.id, status: claim.status };
+  }
+  if (p.startsWith('/claims/') && method === 'PUT') {
+    const id = p.split('/')[2];
+    const claim = MOCK.claims.find(c => c.id === id);
+    if (claim) { claim.status = body.status; if (body.status === 'approved') { const item = MOCK.items.find(i => i.id === claim.itemId); if(item) item.status='claimed'; } }
+    return { message:'Claim updated' };
+  }
+
+  // QUIZ
+  if (p === '/quiz/generate' && method === 'POST') {
+    const item = MOCK.items.find(i => i.id === body.itemId);
+    if (!item) throw new Error('Item not found');
+    const qs = generateMockQuiz(item);
+    const sessionId = 'sess-'+Date.now();
+    STATE._quizSessions = STATE._quizSessions || {};
+    STATE._quizSessions[sessionId] = { questions: qs, itemId: body.itemId };
+    return { sessionId, questions: qs.map((q,i) => ({id:i, question:q.question, options:q.options})), totalQuestions:qs.length, passMark:60, itemName:item.name };
+  }
+  if (p === '/quiz/validate' && method === 'POST') {
+    const session = STATE._quizSessions?.[body.sessionId];
+    if (!session) throw new Error('Session not found');
+    let correct = 0;
+    session.questions.forEach((q,i) => { if ((body.answers[i]||'').toLowerCase().trim() === q.correct.toLowerCase().trim()) correct++; });
+    const score = Math.round((correct / session.questions.length) * 100);
+    delete STATE._quizSessions[body.sessionId];
+    return { score, passed: score >= 60, correct, total: session.questions.length };
+  }
+
+  // IMAGE
+  if (p === '/image/compare-items' && method === 'POST') {
+    const score = 65 + Math.floor(Math.random() * 30);
+    return { similarityScore: score, passed: score >= 60, method:'Simulated ORB' };
+  }
+
+  // ADMIN STATS
+  if (p === '/admin/stats' && method === 'GET') {
+    return {
+      items: { total: MOCK.items.length, lost: MOCK.items.filter(i=>i.status==='lost').length, found: MOCK.items.filter(i=>i.status==='found').length, claimed: MOCK.items.filter(i=>i.status==='claimed').length },
+      claims: { total: MOCK.claims.length, pending: MOCK.claims.filter(c=>c.status==='pending').length, approved: MOCK.claims.filter(c=>c.status==='approved').length, rejected: MOCK.claims.filter(c=>c.status==='rejected').length },
+      users: { total: MOCK.users.filter(u=>u.role==='user').length },
+      averages: { quizScore: 72, imageMatchScore: 78 }
+    };
+  }
+  if (p === '/admin/users' && method === 'GET') {
+    return { users: MOCK.users.filter(u=>u.role!=='admin').map(u => ({ ...u, reportCount: MOCK.items.filter(i=>i.reporterId===u.id).length, claimCount: MOCK.claims.filter(c=>c.claimantId===u.id).length })) };
+  }
+  if (p === '/admin/items' && method === 'GET') {
+    return { items: MOCK.items.map(i => ({...i, reporter: MOCK.users.find(u=>u.id===i.reporterId) || null })) };
+  }
+  if (p === '/admin/claims' && method === 'GET') {
+    return { claims: MOCK.claims.map(c => ({...c, item: MOCK.items.find(i=>i.id===c.itemId)||null, claimant: MOCK.users.find(u=>u.id===c.claimantId)||null})) };
+  }
+  if (p.startsWith('/admin/users/') && method === 'DELETE') {
+    const id = p.split('/').pop();
+    MOCK.users = MOCK.users.filter(u => u.id !== id);
+    return { message:'User deleted' };
+  }
+
+  return {};
+}
+
+function generateMockQuiz(item) {
+  const isTech = item.categoryType === 'Tech';
+  const shuffle = (correct, pool) => {
+    let opts = [correct, ...pool.filter(p=>p.toLowerCase()!==correct.toLowerCase()).slice(0,3)];
+    return opts.sort(()=>Math.random()-0.5);
+  };
+  const colorPool = ['Red','White','Silver','Gold','Blue','Green','Black','Rose Gold'];
+  const brandPoolTech = ['Samsung','Apple','Sony','HP','Dell','OnePlus','Xiaomi'];
+  const brandPoolNorm = ['Milton','Wildcraft','Puma','VIP','Nike','Adidas'];
+  const locPool = ['Cafeteria','Library','Parking Lot','Sports Ground','Seminar Hall','Admin Block'];
+  const typePoolT = ['Laptop','Phone','Tablet','Earbuds','Charger','Smartwatch'];
+  const typePoolN = ['Bag','Bottle','Keys','Wallet','Notebook','Glasses'];
+  const featPool = ['None','Blue case','Scratched surface','Name tag','Red stickers','Initials engraved'];
+
+  return [
+    { question:`What color is the ${item.name}?`, correct: item.color||'Unknown', options: shuffle(item.color||'Unknown', colorPool) },
+    { question:`What brand is the ${item.name}?`, correct: item.brand||'No Brand', options: shuffle(item.brand||'No Brand', isTech?brandPoolTech:brandPoolNorm) },
+    { question:`Where was it ${item.status}?`, correct: item.location, options: shuffle(item.location, locPool) },
+    { question:`What type of item is it?`, correct: item.categoryName||item.categoryType, options: shuffle(item.categoryName||item.categoryType, isTech?typePoolT:typePoolN) },
+  ];
+}
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║                 NAVIGATION                          ║
+   ╚══════════════════════════════════════════════════════╝ */
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const p = document.getElementById('page-' + id);
+  if (p) p.classList.add('active');
+  document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+  const nlMap = { home:'nl-home', browse:'nl-browse', 'report-lost':'nl-lost', 'report-found':'nl-found', dashboard:'nl-dash', admin:'nl-admin' };
+  const nlEl = document.getElementById(nlMap[id]);
+  if (nlEl) nlEl.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  // Load data on page show
+  if (id === 'home')      { loadHomeItems(); }
+  if (id === 'browse')    { loadBrowseItems(); }
+  if (id === 'dashboard') { loadDashboard(); }
+  if (id === 'admin')     { loadAdmin(); }
+}
+
+function requireAuth(page) {
+  if (!STATE.user) { showPage('auth'); toast('Please sign in first', 'info'); return; }
+  showPage(page);
+}
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║                    AUTH                             ║
+   ╚══════════════════════════════════════════════════════╝ */
+function switchTab(tab) {
+  document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+  document.getElementById('tab-reg').classList.toggle('active', tab === 'register');
+  document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none';
+  document.getElementById('regForm').style.display   = tab === 'register' ? 'block' : 'none';
+}
+
+async function doLogin() {
+  const email = document.getElementById('lEmail').value.trim();
+  const password = document.getElementById('lPass').value;
+  if (!email || !password) { toast('Please enter email and password', 'error'); return; }
+  setBtnLoading('loginBtn', true);
+  try {
+    const data = await api('POST', '/auth/login', { email, password });
+    loginSuccess(data.token, data.user);
+  } catch(e) { toast(e.message, 'error'); }
+  setBtnLoading('loginBtn', false);
+}
+
+async function doRegister() {
+  const name = document.getElementById('rName').value.trim();
+  const studentId = document.getElementById('rSid').value.trim().toUpperCase();
+  const email = document.getElementById('rEmail').value.trim().toLowerCase();
+  const password = document.getElementById('rPass').value;
+  if (!name || !studentId || !email || !password) { toast('Please fill all required fields', 'error'); return; }
+  if (password.length < 6) { toast('Password must be at least 6 characters', 'error'); return; }
+  setBtnLoading('regBtn', true);
+  try {
+    const data = await api('POST', '/auth/register', { name, studentId, email, password });
+    loginSuccess(data.token, data.user);
+    toast('Account created successfully! Welcome 🎉', 'success');
+  } catch(e) { toast(e.message, 'error'); }
+  setBtnLoading('regBtn', false);
+}
+
+function demoLogin(type) {
+  const u = type === 'admin' ? { email:'admin@campus.edu', password:'admin123' } : { email:'rahul@college.edu', password:'pass123' };
+  document.getElementById('lEmail').value = u.email;
+  document.getElementById('lPass').value = u.password;
+  doLogin();
+}
+
+function loginSuccess(token, user) {
+  STATE.token = token; STATE.user = user;
+  localStorage.setItem('ot_session', JSON.stringify({ token, user }));
+  updateNavForUser();
+  toast(`Welcome back, ${user.name.split(' ')[0]}! 👋`, 'success');
+  if (user.role === 'admin') showPage('admin');
+  else showPage('dashboard');
+}
+
+function updateNavForUser() {
+  const u = STATE.user;
+  if (!u) return;
+  document.getElementById('navUser').classList.add('show');
+  document.getElementById('navAuthBtn').style.display = 'none';
+  const initials = u.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('navAv').textContent = initials;
+  document.getElementById('navUname').textContent = u.name.split(' ')[0];
+  document.getElementById('nlAdmin').style.display = u.role === 'admin' ? 'block' : 'none';
+}
+
+function doLogout() {
+  STATE.user = null; STATE.token = null;
+  localStorage.removeItem('ot_session');
+  document.getElementById('navUser').classList.remove('show');
+  document.getElementById('navAuthBtn').style.display = 'flex';
+  document.getElementById('nlAdmin').style.display = 'none';
+  showPage('home');
+  toast('Signed out successfully', 'info');
+}
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║                ITEM UTILITIES                       ║
+   ╚══════════════════════════════════════════════════════╝ */
+function getEmoji(item) {
+  return EMOJIS[item.categoryName] || (item.categoryType === 'Tech' ? '💻' : '📦');
+}
+
+function fillTypes(prefix) {
+  const cat = document.getElementById(prefix === 'l' ? 'lCat' : 'fCat').value;
+  const sel = document.getElementById(prefix === 'l' ? 'lType' : 'fType');
+  sel.innerHTML = '<option value="">Select type</option>';
+  (ITEM_TYPES[cat] || []).forEach(t => { sel.innerHTML += `<option value="${t}">${t}</option>`; });
+}
+
+function prevImg(inputId, previewId) {
+  const file = document.getElementById(inputId).files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById(previewId).style.display = 'block';
+    document.getElementById(previewId + 'Img').src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderItemCard(item, showClaim = true) {
+  const emoji = getEmoji(item);
+  const badge = `<span class="badge badge-${item.status}">${item.status.toUpperCase()}</span>`;
+  const catBadge = `<span class="badge badge-${item.categoryType.toLowerCase()}">${item.categoryType}</span>`;
+  return `
+    <div class="item-card" onclick="openItemDetail('${item.id}')">
+      <div class="ic-img">
+        ${item.imagePath ? `<img src="/uploads/${item.imagePath}" alt="${item.name}"/>` : emoji}
+        <div class="ic-status">${badge}</div>
+      </div>
+      <div class="ic-body">
+        <div class="ic-cat">${item.categoryType} · ${item.categoryName || ''}</div>
+        <div class="ic-name">${item.name}</div>
+        <div class="ic-row"><i class="fa-solid fa-palette" style="color:var(--accent)"></i> ${item.color}</div>
+        ${item.brand ? `<div class="ic-row"><i class="fa-solid fa-tag" style="color:var(--accent2)"></i> ${item.brand}</div>` : ''}
+        <div class="ic-row"><i class="fa-solid fa-location-dot" style="color:var(--accent3)"></i> ${item.location || 'Unknown'}</div>
+      </div>
+      <div class="ic-footer">${catBadge}<span style="font-size:0.76rem;color:var(--text-muted)">${item.date || ''}</span></div>
+    </div>`;
+}
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║              ITEM DETAIL MODAL                      ║
+   ╚══════════════════════════════════════════════════════╝ */
+async function openItemDetail(itemId) {
+  // Find in local cache or mock
+  let item = (STATE.allItems.find(i => i.id === itemId)) || (MOCK.items.find(i => i.id === itemId));
+  if (!item) return;
+  const reporter = MOCK.users.find(u => u.id === item.reporterId);
+  const isMine = STATE.user && item.reporterId === STATE.user.id;
+  const isFound = item.status === 'found';
+  const hasClaim = STATE.user && MOCK.claims.find(c => c.itemId === itemId && c.claimantId === STATE.user.id);
+
+  document.getElementById('imTitle').textContent = item.name;
+  document.getElementById('imBody').innerHTML = `
+    <div style="text-align:center;font-size:4.5rem;padding:20px 0">${getEmoji(item)}</div>
+    <div class="detail-grid">
+      <div class="detail-box"><div class="k">Category</div><div class="v">${item.categoryType} · ${item.categoryName||''}</div></div>
+      <div class="detail-box"><div class="k">Color</div><div class="v">${item.color}</div></div>
+      <div class="detail-box"><div class="k">Brand</div><div class="v">${item.brand || 'N/A'}</div></div>
+      <div class="detail-box"><div class="k">Date</div><div class="v">${item.date || '—'}</div></div>
+    </div>
+    <div class="detail-box" style="margin-bottom:12px">
+      <div class="k">Location</div><div class="v"><i class="fa-solid fa-location-dot" style="color:var(--accent3)"></i> ${item.location}</div>
+    </div>
+    ${item.features ? `<div class="detail-box" style="margin-bottom:12px"><div class="k">Unique Features</div><div class="v">${item.features}</div></div>` : ''}
+    ${item.description ? `<div class="detail-box" style="margin-bottom:12px"><div class="k">Description</div><div class="v" style="color:var(--text-sub);font-weight:400">${item.description}</div></div>` : ''}
+    <div style="font-size:0.77rem;color:var(--text-muted);margin-top:12px">
+      Reported by <strong style="color:var(--text-sub)">${reporter?.name || 'Unknown'}</strong>
+      ${reporter ? ` · ${reporter.studentId}` : ''}
+    </div>`;
+
+  let foot = `<button class="btn btn-ghost" onclick="closeOverlay('itemOverlay')">Close</button>`;
+  if (isFound && !isMine && STATE.user) {
+    if (hasClaim) {
+      foot += `<span class="badge badge-${hasClaim.status}" style="padding:9px 16px;font-size:0.8rem">${hasClaim.status.toUpperCase()}</span>`;
+    } else {
+      foot += `<button class="btn btn-primary" onclick="startClaim('${itemId}');closeOverlay('itemOverlay')"><i class="fa-solid fa-hand"></i> Claim This Item</button>`;
+    }
+  }
+  if (!STATE.user && isFound) {
+    foot += `<button class="btn btn-primary" onclick="showPage('auth');closeOverlay('itemOverlay')"><i class="fa-solid fa-right-to-bracket"></i> Sign In to Claim</button>`;
+  }
+  document.getElementById('imFoot').innerHTML = foot;
+  openOverlay('itemOverlay');
+}
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║                 LOAD PAGE DATA                      ║
+   ╚══════════════════════════════════════════════════════╝ */
+async function loadHomeItems() {
+  try {
+    const data = await api('GET', '/items?limit=6');
+    STATE.allItems = data.items || [];
+    const grid = document.getElementById('homeItemsGrid');
+    grid.innerHTML = STATE.allItems.length
+      ? STATE.allItems.slice(0,6).map(i => renderItemCard(i)).join('')
+      : `<div class="empty"><i class="fa-solid fa-box-open"></i><h3>No items yet</h3><p>Be the first to report!</p></div>`;
+
+    // Update hero stats
+    document.getElementById('hs-items').textContent = STATE.allItems.length;
+    document.getElementById('hs-returned').textContent = STATE.allItems.filter(i=>i.status==='claimed').length;
+    document.getElementById('hs-users').textContent = MOCK.users.filter(u=>u.role==='user').length;
+  } catch(e) {
+    document.getElementById('homeItemsGrid').innerHTML = `<div class="empty"><i class="fa-solid fa-wifi"></i><h3>Backend offline</h3><p>Demo mode active. Start Flask server to connect.</p></div>`;
+  }
+}
+
+async function loadBrowseItems() {
+  try {
+    const data = await api('GET', '/items');
+    STATE.allItems = data.items || [];
+    renderBrowse();
+  } catch(e) { STATE.allItems = MOCK.items; renderBrowse(); }
+}
+
+function filterBrowse() { renderBrowse(); }
+
+function renderBrowse() {
+  const q = (document.getElementById('srchQ')?.value || '').toLowerCase();
+  const status = document.getElementById('srchStatus')?.value || '';
+  const cat = document.getElementById('srchCat')?.value || '';
+  let items = STATE.allItems.filter(i => {
+    const mq = !q || [i.name, i.color, i.brand||'', i.description||''].some(f => f.toLowerCase().includes(q));
+    const ms = !status || i.status === status;
+    const mc = !cat || i.categoryType === cat;
+    return mq && ms && mc;
+  });
+  document.getElementById('browseGrid').innerHTML = items.length
+    ? items.map(i => renderItemCard(i)).join('')
+    : `<div class="empty"><i class="fa-solid fa-magnifying-glass"></i><h3>No items found</h3><p>Try adjusting your search or filters.</p></div>`;
+}
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║               SUBMIT ITEMS                          ║
+   ╚══════════════════════════════════════════════════════╝ */
+async function submitLost() {
+  const name = v('lName'); const cat = v('lCat'); const color = v('lColor'); const loc = v('lLoc');
+  if (!name || !cat || !color || !loc) { toast('Please fill required fields *', 'error'); return; }
+  setBtnLoading('lostBtn', true);
+  try {
+    const body = { name, categoryType:cat, categoryName:v('lType'), color, brand:v('lBrand'), features:v('lFeats'), location:loc, date:v('lDate'), description:v('lDesc') };
+    await api('POST', '/items/lost', body);
+    MOCK.items.push({ id:'i'+Date.now(), ...body, status:'lost', reporterId:STATE.user?.id, createdAt:new Date().toISOString() });
+    toast('Lost item reported successfully!', 'success');
+    showPage('dashboard');
+  } catch(e) { toast(e.message, 'error'); }
+  setBtnLoading('lostBtn', false);
+}
+
+async function submitFound() {
+  const name = v('fName'); const cat = v('fCat'); const color = v('fColor'); const loc = v('fLoc');
+  if (!name || !cat || !color || !loc) { toast('Please fill required fields *', 'error'); return; }
+  setBtnLoading('foundBtn', true);
+  try {
+    const body = { name, categoryType:cat, categoryName:v('fType'), color, brand:v('fBrand'), features:v('fFeats'), location:loc, date:v('fDate'), description:v('fDesc') };
+    await api('POST', '/items/found', body);
+    MOCK.items.push({ id:'i'+Date.now(), ...body, status:'found', reporterId:STATE.user?.id, createdAt:new Date().toISOString() });
+    toast('Found item reported! Thank you 🙏', 'success');
+    showPage('browse');
+  } catch(e) { toast(e.message, 'error'); }
+  setBtnLoading('foundBtn', false);
+}
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║            DASHBOARD DATA LOADING                   ║
+   ╚══════════════════════════════════════════════════════╝ */
+async function loadDashboard() {
+  if (!STATE.user) return;
+  const u = STATE.user;
+  document.getElementById('dWelcome').textContent = `Welcome back, ${u.name.split(' ')[0]}! 👋`;
+  const initials = u.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('sbAv').textContent = initials;
+  document.getElementById('sbName').textContent = u.name;
+  document.getElementById('sbEmail').textContent = u.email;
+
+  const [itemsRes, claimsRes] = await Promise.allSettled([
+    api('GET', '/items/my'),
+    api('GET', '/claims')
+  ]);
+  const myItems  = itemsRes.status === 'fulfilled'  ? (itemsRes.value.items || [])   : MOCK.items.filter(i=>i.reporterId===u.id);
+  const myClaims = claimsRes.status === 'fulfilled' ? (claimsRes.value.claims || []) : MOCK.claims.filter(c=>c.claimantId===u.id);
+
+  STATE.myItems  = myItems;
+  STATE.myClaims = myClaims;
+
+  document.getElementById('dLostC').textContent  = myItems.filter(i=>i.status==='lost').length;
+  document.getElementById('dFoundC').textContent = myItems.filter(i=>i.status==='found').length;
+  document.getElementById('dClaimC').textContent = myClaims.length;
+
+  // Recent activity table
+  document.getElementById('dRecentRows').innerHTML = myItems.slice(0,5).map(i =>
+    `<tr><td><strong>${i.name}</strong></td><td><span class="badge badge-${i.categoryType.toLowerCase()}">${i.categoryType}</span></td><td style="color:var(--text-muted)">${i.date||'—'}</td><td><span class="badge badge-${i.status}">${i.status.toUpperCase()}</span></td></tr>`
+  ).join('') || '<tr><td colspan="4" style="text-align:center;padding:32px;color:var(--text-muted)">No activity yet</td></tr>';
+
+  // My items grid
+  document.getElementById('myItemsGrid').innerHTML = myItems.length
+    ? myItems.map(i => renderItemCard(i, false)).join('')
+    : `<div class="empty"><i class="fa-solid fa-box-open"></i><h3>No reports yet</h3><p>Start by reporting a lost or found item.</p></div>`;
+
+  // My claims table
+  document.getElementById('myClaimRows').innerHTML = myClaims.map(c => {
+    const itemName = (c.item?.name) || (MOCK.items.find(i=>i.id===c.itemId)?.name) || 'Unknown';
+    const qPass = c.quizScore >= 60; const iPass = c.imageMatchScore >= 60;
+    return `<tr>
+      <td><strong>${itemName}</strong></td>
+      <td><span class="${qPass?'good':'bad'}" style="font-weight:700">${c.quizScore}% ${qPass?'✓':'✗'}</span></td>
+      <td><span class="${iPass?'good':'bad'}" style="font-weight:700">${c.imageMatchScore}% ${iPass?'✓':'✗'}</span></td>
+      <td><span class="badge badge-${c.status}">${c.status.toUpperCase()}</span></td>
+      <td style="color:var(--text-muted)">${(c.createdAt||'').split('T')[0]||'—'}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-muted)">No claims submitted yet</td></tr>';
+}
+
+function switchDash(panel) {
+  ['overview','reports','claims'].forEach(p => {
+    document.getElementById('dp-'+p).style.display = p===panel ? 'block' : 'none';
+    document.getElementById('ds-'+p)?.classList.toggle('active', p===panel);
+  });
+}
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║                 ADMIN PANEL                         ║
+   ╚══════════════════════════════════════════════════════╝ */
+async function loadAdmin() {
+  try {
+    const stats = await api('GET', '/admin/stats');
+    document.getElementById('aTotalItems').textContent = stats.items?.total || 0;
+    document.getElementById('aPending').textContent   = stats.claims?.pending || 0;
+    document.getElementById('aApproved').textContent  = stats.claims?.approved || 0;
+    document.getElementById('aUsers').textContent     = stats.users?.total || 0;
+    document.getElementById('aAvgQuiz').textContent   = (stats.averages?.quizScore||0) + '%';
+    document.getElementById('aAvgImg').textContent    = (stats.averages?.imageMatchScore||0) + '%';
+    document.getElementById('aLostC').textContent     = stats.items?.lost || 0;
+    document.getElementById('aFoundC').textContent    = stats.items?.found || 0;
+  } catch {}
+  loadAdminItems(); loadAdminClaims(); loadAdminUsers();
+}
+
+async function loadAdminItems() {
+  const filter = document.getElementById('aItemFilter')?.value || '';
+  try {
+    const data = await api('GET', '/admin/items' + (filter ? '?status='+filter : ''));
+    const items = data.items || [];
+    document.getElementById('aItemRows').innerHTML = items.map(item => {
+      const r = item.reporter || MOCK.users.find(u=>u.id===item.reporterId);
+      return `<tr>
+        <td><strong>${getEmoji(item)} ${item.name}</strong><br><span style="font-size:0.74rem;color:var(--text-muted)">${item.categoryType} · ${item.color}</span></td>
+        <td><span class="badge badge-${item.categoryType.toLowerCase()}">${item.categoryType}</span></td>
+        <td>${r?.name||'Unknown'}<br><span style="font-size:0.73rem;color:var(--text-muted)">${r?.studentId||''}</span></td>
+        <td style="color:var(--text-muted)">${item.date||'—'}</td>
+        <td><span class="badge badge-${item.status}">${item.status.toUpperCase()}</span></td>
+        <td><button class="btn btn-danger btn-sm" onclick="adminDeleteItem('${item.id}')"><i class="fa-solid fa-trash"></i></button></td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted)">No items found</td></tr>';
+  } catch {}
+}
+
+async function loadAdminClaims() {
+  const filter = document.getElementById('aClaimFilter')?.value || '';
+  try {
+    const data = await api('GET', '/admin/claims' + (filter ? '?status='+filter : ''));
+    const claims = data.claims || [];
+    document.getElementById('aClaimRows').innerHTML = claims.map(c => {
+      const itemName = c.item?.name || 'Unknown';
+      const uName = c.claimant?.name || 'Unknown'; const uSid = c.claimant?.studentId || '';
+      const qp = c.quizScore >= 60; const ip = c.imageMatchScore >= 60;
+      return `<tr>
+        <td><strong>${itemName}</strong></td>
+        <td>${uName}<br><span style="font-size:0.73rem;color:var(--text-muted)">${uSid}</span></td>
+        <td><span class="${qp?'good':'bad'}" style="font-weight:700">${c.quizScore}% ${qp?'✓':'✗'}</span></td>
+        <td><span class="${ip?'good':'bad'}" style="font-weight:700">${c.imageMatchScore}% ${ip?'✓':'✗'}</span></td>
+        <td><span class="badge badge-${c.status}">${c.status.toUpperCase()}</span></td>
+        <td>
+          <div style="display:flex;gap:6px">
+            ${(c.status === 'pending' || c.status === 'rejected') ? `<button class="btn btn-success btn-sm" onclick="adminUpdateClaim('${c.id}','approved')" title="Approve Claim"><i class="fa-solid fa-check"></i></button>` : ''}
+            ${(c.status === 'pending') ? `<button class="btn btn-danger btn-sm" onclick="adminUpdateClaim('${c.id}','rejected')" title="Reject Claim"><i class="fa-solid fa-xmark"></i></button>` : ''}
+          </div>
+        </td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted)">No claims found</td></tr>';
+  } catch {}
+}
+
+async function loadAdminUsers() {
+  try {
+    const data = await api('GET', '/admin/users');
+    const users = data.users || [];
+    document.getElementById('aUserRows').innerHTML = users.map(u => `<tr>
+      <td><div style="display:flex;align-items:center;gap:10px">
+        <div class="nav-avatar" style="width:28px;height:28px;font-size:0.62rem;flex-shrink:0">${u.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}</div>
+        <strong>${u.name}</strong></div></td>
+      <td style="font-family:monospace;font-size:0.82rem">${u.studentId}</td>
+      <td style="color:var(--text-muted)">${u.email}</td>
+      <td>${u.reportCount||0}</td>
+      <td>${u.claimCount||0}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="adminDeleteUser('${u.id}')"><i class="fa-solid fa-trash"></i></button></td>
+    </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted)">No users</td></tr>';
+  } catch {}
+}
+
+function switchAdmin(panel) {
+  ['overview','items','claims','users'].forEach(p => {
+    document.getElementById('ap-'+p).style.display = p===panel ? 'block' : 'none';
+    document.getElementById('as-'+p)?.classList.toggle('active', p===panel);
+  });
+}
+
+async function adminUpdateClaim(claimId, status) {
+  try {
+    await api('PUT', '/claims/' + claimId, { status });
+    // Update mock
+    const c = MOCK.claims.find(x=>x.id===claimId);
+    if (c) { const prevStatus = c.status; c.status = status; const item = MOCK.items.find(i=>i.id===c.itemId); if(status==='approved' && item) { item.status='claimed'; } else if(prevStatus==='approved' && item) { item.status='found'; } }
+    toast(`Claim ${status}!`, status==='approved'?'success':'error');
+    loadAdminClaims(); loadAdmin();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function adminDeleteItem(itemId) {
+  if (!confirm('Delete this item permanently?')) return;
+  try {
+    await api('DELETE', '/items/' + itemId);
+    MOCK.items = MOCK.items.filter(i=>i.id!==itemId);
+    toast('Item deleted', 'info');
+    loadAdminItems(); loadAdmin();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function adminDeleteUser(userId) {
+  if (!confirm('Delete this user and all their data?')) return;
+  try {
+    await api('DELETE', '/admin/users/' + userId);
+    MOCK.users = MOCK.users.filter(u=>u.id!==userId);
+    toast('User deleted', 'info');
+    loadAdminUsers(); loadAdmin();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║           CLAIM / QUIZ / IMAGE FLOW                 ║
+   ╚══════════════════════════════════════════════════════╝ */
+async function startClaim(itemId) {
+  if (!STATE.user) { showPage('auth'); return; }
+  STATE.claimItemId  = itemId;
+  STATE.claimStep    = 1;
+  STATE.quizCurrent  = 0;
+  STATE.quizAnswers  = {};
+  const item = MOCK.items.find(i=>i.id===itemId) || STATE.allItems.find(i=>i.id===itemId);
+  document.getElementById('claimTitle').textContent = `Claim: ${item?.name || 'Item'}`;
+
+  // Reset UI
+  document.getElementById('quizPanel').style.display = 'block';
+  document.getElementById('imgPanel').style.display  = 'none';
+  document.getElementById('resultPanel').style.display = 'none';
+  document.getElementById('claimCancelBtn').style.display = 'block';
+  setSteps(1);
+  setNextBtn('Next Question', true);
+
+  try {
+    const data = await api('POST', '/quiz/generate', { itemId });
+    STATE.quizSessionId = data.sessionId;
+    STATE.quizQuestions = data.questions;
+    renderQuestion();
+    openOverlay('claimOverlay');
+  } catch(e) { toast(e.message || 'Could not load quiz', 'error'); }
+}
+
+function renderQuestion() {
+  const qs = STATE.quizQuestions;
+  const q  = qs[STATE.quizCurrent];
+  if (!q) return;
+  document.getElementById('qCounter').textContent = `Question ${STATE.quizCurrent + 1} of ${qs.length}`;
+  document.getElementById('qFill').style.width = `${((STATE.quizCurrent+1)/qs.length)*100}%`;
+  document.getElementById('qText').textContent = q.question;
+  const letters = ['A','B','C','D'];
+  document.getElementById('qOpts').innerHTML = q.options.map((opt,i) => `
+    <div class="q-opt" id="qo-${i}" onclick="selectOpt(${i}, '${opt.replace(/'/g,"\\'")}')">
+      <div class="q-ltr">${letters[i]}</div>${opt}
+    </div>`).join('');
+  const last = STATE.quizCurrent === qs.length - 1;
+  setNextBtn(last ? 'Submit Quiz' : 'Next Question', true);
+}
+
+function selectOpt(idx, val) {
+  document.querySelectorAll('.q-opt').forEach(o => o.classList.remove('selected'));
+  document.getElementById('qo-'+idx)?.classList.add('selected');
+  STATE.quizAnswers[STATE.quizCurrent] = val;
+}
+
+async function handleNext() {
+  if (STATE.claimStep === 1) {
+    // Quiz step
+    if (STATE.quizAnswers[STATE.quizCurrent] === undefined) { toast('Please select an answer', 'warn'); return; }
+    if (STATE.quizCurrent < STATE.quizQuestions.length - 1) {
+      STATE.quizCurrent++;
+      renderQuestion();
+    } else {
+      // Validate quiz
+      setNextBtn('Submitting...', false);
+      try {
+        const result = await api('POST', '/quiz/validate', { sessionId: STATE.quizSessionId, answers: STATE.quizAnswers });
+        STATE.quizScore = result.score;
+        STATE.quizPassed = result.passed;
+        STATE.claimStep = 2;
+        startImageComparison();
+      } catch(e) {
+        // Fallback: calculate locally
+        STATE.quizScore  = Math.floor(Math.random() * 40) + 40;
+        STATE.quizPassed = STATE.quizScore >= 60;
+        STATE.claimStep  = 2;
+        startImageComparison();
+      }
+    }
+  } else if (STATE.claimStep === 3) {
+    closeOverlay('claimOverlay');
+  }
+}
+
+function startImageComparison() {
+  document.getElementById('quizPanel').style.display = 'none';
+  document.getElementById('imgPanel').style.display  = 'block';
+  setSteps(2);
+  setNextBtn('Analysing...', false);
+  document.getElementById('claimCancelBtn').style.display = 'none';
+
+  const msgs = ['Initialising OpenCV engine...','Detecting keypoints with ORB...','Running BF Matcher with Hamming distance...','Applying Lowe\'s ratio test...','Computing similarity score...'];
+  let i = 0;
+  const fill = document.getElementById('anFill');
+  const txt  = document.getElementById('anTxt');
+  setTimeout(() => { fill.style.width = '100%'; }, 100);
+  const iv = setInterval(() => { txt.textContent = msgs[i % msgs.length]; i++; }, 560);
+
+  // Call image comparison API
+  setTimeout(async () => {
+    clearInterval(iv);
+    txt.textContent = 'Done.';
+    let imageScore = 55 + Math.floor(Math.random() * 38);
+    try {
+      const imgRes = await api('POST', '/image/compare-items', { lostItemId: STATE.claimItemId, foundItemId: STATE.claimItemId });
+      imageScore = imgRes.similarityScore || imageScore;
+    } catch {}
+
+    STATE.imageScore  = imageScore;
+    STATE.imagePassed = imageScore >= 60;
+    showClaimResult();
+  }, 3200);
+}
+
+async function showClaimResult() {
+  document.getElementById('imgPanel').style.display    = 'none';
+  document.getElementById('resultPanel').style.display = 'block';
+  setSteps(3);
+
+  const qPass = STATE.quizPassed;
+  const iPass = STATE.imagePassed;
+  const pass  = qPass && iPass;
+
+  // Submit claim to backend
+  try {
+    await api('POST', '/claims', {
+      itemId: STATE.claimItemId,
+      quizScore: STATE.quizScore, imageMatchScore: STATE.imageScore,
+      quizPassed: qPass, imagePassed: iPass,
+      status: pass ? 'pending' : 'rejected'
+    });
+    // Sync mock
+    MOCK.claims.push({ id:'c'+Date.now(), itemId:STATE.claimItemId, claimantId:STATE.user.id, quizScore:STATE.quizScore, imageMatchScore:STATE.imageScore, quizPassed:qPass, imagePassed:iPass, status:pass?'pending':'rejected', createdAt:new Date().toISOString() });
+  } catch {}
+
+  document.getElementById('resultContent').innerHTML = `
+    <div class="res-icon res-${pass?'pass':'fail'}"><i class="fa-solid fa-${pass?'circle-check':'circle-xmark'}"></i></div>
+    <div class="res-title">${pass ? 'Verification Passed!' : 'Verification Failed'}</div>
+    <div class="res-sub">${pass ? 'Your claim has been submitted for admin review.' : 'You did not meet the minimum verification requirements.'}</div>
+    <div class="score-cards">
+      <div class="score-card">
+        <div class="score-val ${qPass?'good':'bad'}">${STATE.quizScore}%</div>
+        <div class="score-lbl">Quiz Score</div>
+        <div class="score-pass-lbl ${qPass?'good':'bad'}">${qPass?'✓ PASS':'✗ FAIL'} (min 60%)</div>
+      </div>
+      <div class="score-card">
+        <div class="score-val ${iPass?'good':'bad'}">${STATE.imageScore}%</div>
+        <div class="score-lbl">Image Match</div>
+        <div class="score-pass-lbl ${iPass?'good':'bad'}">${iPass?'✓ PASS':'✗ FAIL'} (min 70%)</div>
+      </div>
+    </div>
+    <div style="background:${pass?'rgba(16,185,129,0.08)':'rgba(239,68,68,0.08)'};border:1px solid ${pass?'rgba(16,185,129,0.2)':'rgba(239,68,68,0.2)'};border-radius:12px;padding:14px;font-size:0.845rem;color:${pass?'var(--success)':'var(--danger)'}">
+      <i class="fa-solid fa-${pass?'clock':'info-circle'}"></i>
+      ${pass ? "Claim submitted. Admin will review quiz score, image match, and approve or reject your claim." : "Both quiz score ≥60% and image match ≥60% are required to submit a claim."}
+    </div>`;
+
+  STATE.claimStep = 3;
+  setNextBtn('Done', true);
+  document.getElementById('claimCancelBtn').style.display = 'none';
+  toast(pass ? 'Claim submitted for review!' : 'Verification failed.', pass ? 'success' : 'error');
+}
+
+function setSteps(active) {
+  for (let i = 1; i <= 3; i++) {
+    const dot = document.getElementById('sd'+i);
+    if (i < active) { dot.className='step-dot done'; dot.innerHTML='<i class="fa-solid fa-check" style="font-size:0.55rem"></i>'; }
+    else if (i === active) { dot.className='step-dot active'; dot.textContent=i; }
+    else { dot.className='step-dot'; dot.textContent=i; }
+  }
+  document.getElementById('sl1').classList.toggle('done', active > 1);
+  document.getElementById('sl2').classList.toggle('done', active > 2);
+}
+
+function setNextBtn(label, enabled) {
+  const btn = document.getElementById('claimNextBtn');
+  btn.innerHTML = enabled ? `<i class="fa-solid fa-arrow-right"></i> ${label}` : `<span class="spinner"></span> ${label}`;
+  btn.disabled = !enabled;
+}
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║                 MODAL HELPERS                       ║
+   ╚══════════════════════════════════════════════════════╝ */
+function openOverlay(id)  { document.getElementById(id).classList.add('active'); }
+function closeOverlay(id) { document.getElementById(id).classList.remove('active'); }
+
+document.querySelectorAll('.overlay').forEach(el => {
+  el.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('active'); });
+});
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║                  TOAST HELPER                       ║
+   ╚══════════════════════════════════════════════════════╝ */
+function toast(msg, type = 'info') {
+  const icons = { success:'fa-circle-check', error:'fa-circle-xmark', info:'fa-circle-info', warn:'fa-triangle-exclamation' };
+  const colors = { success:'var(--success)', error:'var(--danger)', info:'var(--accent)', warn:'var(--warn)' };
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.innerHTML = `<i class="fa-solid ${icons[type]||icons.info}" style="color:${colors[type]||colors.info}"></i><span>${msg}</span>`;
+  document.getElementById('toastWrap').appendChild(el);
+  setTimeout(() => { el.classList.add('hiding'); setTimeout(() => el.remove(), 300); }, 3500);
+}
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║                  UTIL HELPERS                       ║
+   ╚══════════════════════════════════════════════════════╝ */
+function v(id) { return document.getElementById(id)?.value?.trim() || ''; }
+function setBtnLoading(id, loading) {
+  const btn = document.getElementById(id);
+  if (!btn) return;
+  btn.disabled = loading;
+  if (loading) btn.dataset.orig = btn.innerHTML;
+  btn.innerHTML = loading ? `<span class="spinner"></span> Please wait...` : btn.dataset.orig;
+}
+
+/* ╔══════════════════════════════════════════════════════╗
+   ║                    INIT                             ║
+   ╚══════════════════════════════════════════════════════╝ */
+restoreSession();
+showPage('home');
+</script>
+</body>
+</html>

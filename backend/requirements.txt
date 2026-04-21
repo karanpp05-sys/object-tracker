@@ -1,0 +1,10 @@
+flask==3.0.3
+flask-cors==4.0.1
+flask-jwt-extended==4.6.0
+pymongo==4.7.3
+werkzeug==3.0.3
+python-dotenv==1.0.1
+opencv-python==4.10.0.84
+numpy==1.26.4
+scikit-image==0.23.2
+Pillow==10.4.0
