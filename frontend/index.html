@@ -1090,9 +1090,7 @@ textarea.fi { resize: vertical; min-height: 96px; }
 /* ╔══════════════════════════════════════════════════════╗
    ║              CONFIGURATION & STATE                  ║
    ╚══════════════════════════════════════════════════════╝ */
-const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? 'https://object-tracker-production.up.railway.app/api'
-  : '/api'; // Same-origin in production
+const API = 'https://object-tracker-production.up.railway.app/api';
 
 const ITEM_TYPES = {
   Tech:   ['Phone','Laptop','Earbuds','Tablet','Smartwatch','Charger','Power Bank','Headphones','Camera','USB Drive'],
